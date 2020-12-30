@@ -12,8 +12,8 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # service callback
 
-
-def set_new_pos(req):
+coords = MoveBaseGoal() 
+def set_new_pos():
 
     global coords
     print("Target reached! Please insert a new position")
@@ -35,13 +35,12 @@ def set_new_pos(req):
 
 
 def main():
-
+    global coords
     rospy.init_node('user_interface')
 
     act_c = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
     act_c.wait_for_server()
 
-    coords = MoveBaseGoal() 
     
     time.sleep(10)
     x = rospy.get_param("des_pos_x")
@@ -57,9 +56,9 @@ def main():
     # Waits for the server to finish performing the action.
     act_c.wait_for_result()
     
-    srv = rospy.Service('user_interface', Empty, set_new_pos)
     rate = rospy.Rate(20)
     while not rospy.is_shutdown():
+	set_new_pos()
         rate.sleep()
 
 
