@@ -66,5 +66,6 @@
    <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
 	args="-urdf -model robot1 -param robot_description -x -5 -y 8 -z 0.05 -Y -1.57"/> 
 
+   <node pkg="exp_assignment3" type="user_interface.py" name="user_interface" output="screen" />
 
 </launch>
