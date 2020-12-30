@@ -266,30 +266,92 @@ class Play(smach.State):
 	self.sub_command = rospy.Subscriber('/command', String, cb_command)
         self.sub_flag = rospy.Subscriber('/arrived_play', Bool, cb_flag)
 
+	#Actions
+	self.act_c = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
+
+	#rospy.loginfo('Waiting for action server to start')
+	self.act_c.wait_for_server()
+	#rospy.loginfo('Server started')
+
+	#Initializations
+	self.human = Point(x = -6, y = 8.5)
+	self.coords = MoveBaseGoal()  
+
+	self.play_counter = 0
+	self.play_times = random.randrange(1,3)
+
+	#Room definitions
+	room_dict = {
+	    1:"entrance",
+	    2:"closet",
+	    3:"living_room",
+	    4:"kitchen",
+	    5:"bathroom",
+	    6:"bedroom"}
+
+    def room_select():
+	"""Function to display the grid and select the destination point
+
+	Returns:
+		room
+			The room where we want to play
+	"""
+	print("Human reached! Please tell me a room")
+    	room = str(raw_input('room :'))
+    	print("Thanks! Let's reach the " + room)
+
+	return room
+
+
     def execute(self, userdata):
 
 	global sm_flag
         time.sleep(1)
         rospy.loginfo('Executing state PLAY')
 
+	"""
 	#Gets first play coordinates
 	self.pub_command.publish("play")
 
 	#We make sure we haven't arrived to the play destination
 	sm_flag = False
+	"""
         while not rospy.is_shutdown():       
                 
-		if sm_flag:
-			sm_flag = False
-                	self.pub_command.publish("play")
-                        time.sleep(1)
+		# If not, continue with the behavior
+                if(self.play_counter < self.play_times):
+			
+			# Increment the count
+			self.play_counter += 1
+			
+			#Go towards the human
+			self.coords.target_pose.pose.position.x = self.human.x
+			self.coords.target_pose.pose.position.y = self.human.y
+
+			self.coords.target_pose.header.frame_id = "map"
+    			self.coords.target_pose.pose.orientation.w = 1.0
+
+			self.act_c.send_goal(self.coords)
+			print('Going to human (' + str(self.human.x) + ', ' + str(self.human.y)+ ')')
+
+			# Waits for the server to finish performing the action.
+			self.act_c.wait_for_result()
+		
+			room = room_select()
+
+		
+
+		#if sm_flag:
+		#	sm_flag = False
+                #	self.pub_command.publish("play")
+                #        time.sleep(1)
 		
 		if(sm_command == "stop"):
-			self.pub_command.publish("stop")
-			print("Ball dissapeared!")
-			time.sleep(10)
+			#self.pub_command.publish("stop")
+			#print("Ball dissapeared!")
+			#time.sleep(10)
 			return 'stop'
-
+	
     
 
 # Callback functions

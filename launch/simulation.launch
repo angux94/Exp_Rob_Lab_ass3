@@ -73,4 +73,6 @@
    <param name="sleep_y" type="double" value="2.5" />
    <param name="time_sleep" type="int" value="10" />
 
+   <node name="command_request" pkg="exp_assignment3" type="command_request.py" output="screen" />
+
 </launch>

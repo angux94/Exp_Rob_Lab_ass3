@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import actionlib
 import actionlib.msg
 import motion_plan.msg
-
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 
 # Global variables
@@ -24,23 +24,14 @@ def coord_select():
 	"""Function to display the grid and select the destination point
 
 	Returns:
-		xy
-			X and Y coordinates of the point selected
+		room
+			The room where we want to play
 	"""
+	print("Human reached! Please tell me a room")
+    	room = str(raw_input('x :'))
+    	print("Thanks! Let's reach the " + room)
 
-	# 8x8 grid for selecting the destination
-	plt.title('Select play destination')
-	plt.figure(1)
-	for i in range(-8,8):
-		plt.plot([i, i], [-8,8], 'k')
-		plt.plot([-8,8],[i, i], 'k')
-
-	# Point input
-	xy = plt.ginput(1)
-	plt.close()
-	plt.show()
-
-	return xy
+	return room
 
 # Callback functions
 def callback(data):
@@ -73,7 +64,7 @@ def main():
 	sub = rospy.Subscriber('/gesture_request', String, callback)
 
 	#Actions
-	act_c = actionlib.SimpleActionClient('/reaching_goal', motion_plan.msg.PlanningAction)
+	act_c = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
 	
 	#rospy.loginfo('Waiting for action server to start')
 	act_c.wait_for_server()
@@ -82,7 +73,7 @@ def main():
 	# Initialiizations
 	global cb_msg
 
-	goal = motion_plan.msg.PlanningGoal()
+	human = MoveBaseGoal()
 	play_coord = Point(x = 0, y = 0, z = 0)
 
 	rate = rospy.Rate(10) # 10hz
@@ -94,24 +85,27 @@ def main():
 			# Clean variable
 			cb_msg = None
 
-			# Get destination coordinates
-			xy = coord_select()
-
-			#storage of the x and y coords of the point
-			x = xy[0][0]
-			y = xy[0][1]
-			z = 0.5
+			#Go to human
+			human_x = -6
+        		human_y = 8.5
 
 			# Publish coordinates onto the action
-			goal.target_pose.pose.position.x = x
-			goal.target_pose.pose.position.y = y
-			goal.target_pose.pose.position.z = z
-			
-			act_c.send_goal(goal)
-			print('Ball to: ' + str(goal.target_pose.pose.position.x) + ', ' + str(goal.target_pose.pose.position.y)+ ', ' + str(goal.target_pose.pose.position.z))
+			human.target_pose.pose.position.x = human_x
+			human.target_pose.pose.position.y = human_y
+
+			human.target_pose.header.frame_id = "map"
+    			human.target_pose.pose.orientation.w = 1.0
+
+			#Go towards the human
+			act_c.send_goal(human)
+			print('Going to human (' + str(human_x) + ', ' + str(human_y)+ ')')
 
 			# Waits for the server to finish performing the action.
 			act_c.wait_for_result()
+
+			# Get destination coordinates
+			xy = coord_select()
+
 
 		if(cb_msg == "stop"):
 			# Clean variable
