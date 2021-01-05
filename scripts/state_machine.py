@@ -52,7 +52,7 @@ class Normal(smach.State):
                
         #Publishers and subscribers
         self.sub_command = rospy.Subscriber('/command', String, cb_command)
-
+	self.pub = rospy.Publisher('/status', String, queue_size=10)
 	#Actions
 	self.act_c = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
 	
@@ -78,14 +78,17 @@ class Normal(smach.State):
             print(sm_command)
             sm_command = None
             return 'play'
-        
+
         # If not, proceed to randomly walk
         else:
+	    #Let know to the command_recog node we can accept inputs
+	    self.pub.publish('normal')
+	    
 	    # Amount of random walks before sleeping
             normal_times = rospy.get_param('normal_times',random.randrange(1,5))
 
-            x = random.randrange(-6,6)
-            y = random.randrange(-8,8)
+            x = -3#random.randrange(-6,6)
+            y = 6#random.randrange(-8,8)
 	    z = 0
 
             normal_coord = Point(x = x, y = y, z = z)
@@ -121,8 +124,8 @@ class Normal(smach.State):
                 # If not, continue with the behavior
                 if(self.normal_counter < normal_times):
 
-                    x = random.randrange(-6,6)
-                    y = random.randrange(-8,8)
+                    x = -2#random.randrange(-6,6)
+                    y = 6#random.randrange(-8,8)
 		    z = 0
 
                     normal_coord = Point(x = x, y = y, z = z)
@@ -255,10 +258,9 @@ class Play(smach.State):
 		subscribe to get the stop command to exit the PLAY state
     """
     def __init__(self):
-        smach.State.__init__(self, outcomes=['stop'])
-
-        # Initialization
-        self.play_counter = 1
+        smach.State.__init__(self, outcomes=['stop', 'find'],
+				   input_keys=['entrance_pin', 'closet_pin', 'living_room_pin', 'kitchen_pin', 'bathroom_pin', 'bedroom_pin'],
+				   output_keys=['room_out'])
 
         #Publishers and subscribers
         self.pub_command = rospy.Publisher('/gesture_request', String, queue_size=10)
@@ -274,22 +276,20 @@ class Play(smach.State):
 	#rospy.loginfo('Server started')
 
 	#Initializations
-	self.human = Point(x = -6, y = 8.5)
+	self.human = Point(x = -5, y = 8)
 	self.coords = MoveBaseGoal()  
 
 	self.play_counter = 0
-	self.play_times = random.randrange(1,3)
-
+	self.play_times = 0
 	#Room definitions
-	room_dict = {
-	    1:"entrance",
-	    2:"closet",
-	    3:"living_room",
-	    4:"kitchen",
-	    5:"bathroom",
-	    6:"bedroom"}
+	#entrance = Point(x = 0, y = 0)
+	#closet = Point(x = 0, y = 0)
+	#living_room = Point(x = 0, y = 0)
+	#kitchen = Point(x = 0, y = 0)
+	#bathroom = Point(x = 0, y = 0)
+	#bedroom = Point(x = 0, y = 0)
 
-    def room_select():
+    def room_select(self):
 	"""Function to display the grid and select the destination point
 
 	Returns:
@@ -297,15 +297,20 @@ class Play(smach.State):
 			The room where we want to play
 	"""
 	print("Human reached! Please tell me a room")
-    	room = str(raw_input('room :'))
+    	room = str(raw_input('room: '))
     	print("Thanks! Let's reach the " + room)
 
 	return room
 
+    #def it_exists(self, room):
+	#global entrance, closet, living_room, kitchen, bathroom, bedroom
+	
+	#print('input room: ' + str(eval(room)) + ' exists')
+		
+
 
     def execute(self, userdata):
-
-	global sm_flag
+	global sm_flag, room_select, it_exists
         time.sleep(1)
         rospy.loginfo('Executing state PLAY')
 
@@ -316,6 +321,13 @@ class Play(smach.State):
 	#We make sure we haven't arrived to the play destination
 	sm_flag = False
 	"""
+	
+	#Get play times each time we run the play state
+	if(self.play_counter == 0):	
+		self.play_times = random.randrange(1,3)
+
+	
+	
         while not rospy.is_shutdown():       
                 
 		# If not, continue with the behavior
@@ -323,7 +335,8 @@ class Play(smach.State):
 			
 			# Increment the count
 			self.play_counter += 1
-			
+			print("We are playing " + str(self.play_times) + " times")
+			print("Counter: " + str(self.play_counter))
 			#Go towards the human
 			self.coords.target_pose.pose.position.x = self.human.x
 			self.coords.target_pose.pose.position.y = self.human.y
@@ -336,11 +349,121 @@ class Play(smach.State):
 
 			# Waits for the server to finish performing the action.
 			self.act_c.wait_for_result()
-		
-			room = room_select()
+			room = self.room_select()
+			userdata.room_out = room
 
-		
+			if(room == "entrance"):
+				if(userdata.entrance_pin.x==0 and userdata.entrance_pin.y==0):
+					print("Entrance is unknown, let's find it")
+					return 'find'
+				else:				
+					print(userdata.entrance_pin)
+					#self.it_exists(userdata.room_out)
+					#Go towards the point
+					self.coords.target_pose.pose.position.x = userdata.entrance_pin.x
+					self.coords.target_pose.pose.position.y = userdata.entrance_pin.y
 
+					self.coords.target_pose.header.frame_id = "map"
+    					self.coords.target_pose.pose.orientation.w = 1.0
+					self.act_c.send_goal(self.coords)
+
+					# Waits for the server to finish performing the action.
+					self.act_c.wait_for_result()
+
+			if(room == "closet"):
+				if(userdata.closet_pin.x==0 and userdata.closet_pin.y==0):
+					print("Closet is unknown, let's find it")
+					return 'find'
+				else:				
+					print(userdata.closet_pin)
+					#self.it_exists(userdata.room_out)
+					#Go towards the point
+					self.coords.target_pose.pose.position.x = userdata.closet_pin.x
+					self.coords.target_pose.pose.position.y = userdata.closet_pin.y
+
+					self.coords.target_pose.header.frame_id = "map"
+    					self.coords.target_pose.pose.orientation.w = 1.0
+					self.act_c.send_goal(self.coords)
+
+					# Waits for the server to finish performing the action.
+					self.act_c.wait_for_result()
+
+			if(room == "living room"):
+				if(userdata.living_room_pin.x==0 and userdata.living_room_pin.y==0):
+					print("Living room is unknown, let's find it")
+					return 'find'
+				else:				
+					print(userdata.living_room_pin)
+					#self.it_exists(userdata.room_out)
+					#Go towards the point
+					self.coords.target_pose.pose.position.x = userdata.living_room_pin.x
+					self.coords.target_pose.pose.position.y = userdata.living_room_pin.y
+
+					self.coords.target_pose.header.frame_id = "map"
+    					self.coords.target_pose.pose.orientation.w = 1.0
+					self.act_c.send_goal(self.coords)
+
+					# Waits for the server to finish performing the action.
+					self.act_c.wait_for_result()
+
+			if(room == "kitchen"):
+				if(userdata.kitchen_pin.x==0 and userdata.kitchen_pin.y==0):
+					print("Kitchen is unknown, let's find it")
+					return 'find'
+				else:				
+					print(userdata.kitchen_pin)
+					#self.it_exists(userdata.room_out)
+					#Go towards the point
+					self.coords.target_pose.pose.position.x = userdata.kitchen_pin.x
+					self.coords.target_pose.pose.position.y = userdata.kitchen_pin.y
+
+					self.coords.target_pose.header.frame_id = "map"
+    					self.coords.target_pose.pose.orientation.w = 1.0
+					self.act_c.send_goal(self.coords)
+
+					# Waits for the server to finish performing the action.
+					self.act_c.wait_for_result()
+
+			if(room == "bathroom"):
+				if(userdata.bathroom_pin.x==0 and userdata.bathroom_pin.y==0):
+					print("Bathroom is unknown, let's find it")
+					return 'find'
+				else:				
+					print(userdata.bathroom_pin)
+					#self.it_exists(userdata.room_out)
+					#Go towards the point
+					self.coords.target_pose.pose.position.x = userdata.bathroom_pin.x
+					self.coords.target_pose.pose.position.y = userdata.bathroom_pin.y
+
+					self.coords.target_pose.header.frame_id = "map"
+    					self.coords.target_pose.pose.orientation.w = 1.0
+					self.act_c.send_goal(self.coords)
+
+					# Waits for the server to finish performing the action.
+					self.act_c.wait_for_result()
+
+			if(room == "bedroom"):
+				if(userdata.bedroom_pin.x==0 and userdata.bedroom_pin.y==0):
+					print("Bedroom is unknown, let's find it")
+					return 'find'
+				else:				
+					print(userdata.bedroom_pin)
+					#self.it_exists(userdata.room_out)
+					#Go towards the point
+					self.coords.target_pose.pose.position.x = userdata.bedroom_pin.x
+					self.coords.target_pose.pose.position.y = userdata.bedroom_pin.y
+
+					self.coords.target_pose.header.frame_id = "map"
+    					self.coords.target_pose.pose.orientation.w = 1.0
+					self.act_c.send_goal(self.coords)
+
+					# Waits for the server to finish performing the action.
+					self.act_c.wait_for_result()
+
+		else:
+			#Reset play counter
+			self.play_counter = 0
+			return 'stop'
 		#if sm_flag:
 		#	sm_flag = False
                 #	self.pub_command.publish("play")
@@ -352,7 +475,61 @@ class Play(smach.State):
 			#time.sleep(10)
 			return 'stop'
 	
-    
+# define state FIND
+class Find(smach.State):
+    """ Class for the FIND state
+
+   
+    """
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['found'],
+				   input_keys=['room_in'],
+				   output_keys=['entrance_fout', 'closet_fout', 'living_room_fout', 'kitchen_fout', 'bathroom_fout', 'bedroom_fout'])
+        
+    def execute(self, userdata):
+
+	global sm_flag
+        time.sleep(1)
+        rospy.loginfo('Executing state FIND')
+
+	#We make sure we haven't arrived to the play destination
+	sm_flag = False
+        while not rospy.is_shutdown():
+                
+		if(userdata.room_in == 'entrance'):
+			userdata.entrance_fout = Point(x = -2, y = 5)
+			print("Entrance located at x:-2 y:5")
+			return 'found'
+		if(userdata.room_in == 'closet'):
+			userdata.closet_fout = Point(x = -3, y = 5)
+			print("Closet located at x:-3 y:5")
+			return 'found'
+		if(userdata.room_in == 'living room'):
+			userdata.living_room_fout = Point(x = -3, y = 5)
+			print("Living room located at x:-3 y:5")
+			return 'found'
+		if(userdata.room_in == 'kitchen'):
+			userdata.kitchen_fout = Point(x = -3, y = 5)
+			print("Kitchen located at x:-3 y:5")
+			return 'found'
+		if(userdata.room_in == 'bathroom'):
+			userdata.bathroom_fout = Point(x = -3, y = 5)
+			print("Bathroom located at x:-3 y:5")
+			return 'found'	
+		if(userdata.room_in == 'bedroom'):
+			userdata.bedroom_fout = Point(x = -3, y = 5)
+			print("Bedroom located at x:-3 y:5")
+			return 'found'	
+		#if sm_flag:
+		#	sm_flag = False
+                #	self.pub_command.publish("play")
+                #        time.sleep(1)
+		
+		#if(sm_command == "stop"):
+		#	self.pub_command.publish("stop")
+		#	print("Ball dissapeared!")
+		#	time.sleep(10)
+		#	return 'stop'
 
 # Callback functions
 sm_command = None
@@ -399,6 +576,13 @@ def main():
     # Create a SMACH state machine
     sm = smach.StateMachine(outcomes=['COORDS'])
 
+    sm.userdata.entrance = Point()
+    sm.userdata.closet = Point()
+    sm.userdata.living_room = Point()
+    sm.userdata.kitchen = Point()
+    sm.userdata.bathroom = Point()
+    sm.userdata.bedroom = Point()
+    sm.userdata.room = None
 
     rate = rospy.Rate(10) # 10hz
     # Open the container
@@ -412,7 +596,13 @@ def main():
                                transitions={'wait':'NORMAL'})
 
         smach.StateMachine.add('PLAY', Play(), 
-                               transitions={'stop':'NORMAL'})
+                               transitions={'stop':'NORMAL',
+					    'find':'FIND'},
+			       remapping={'entrance_pin':'entrance','closet_pin':'closet', 'living_room_pin':'living_room', 'kitchen_pin':'kitchen', 'bathroom_pin':'bathroom', 'bedroom_pin':'bedroom', 'room_out':'room'})
+
+	smach.StateMachine.add('FIND', Find(), 
+                               transitions={'found':'PLAY'},
+			       remapping={'room_in':'room', 'entrance_fout':'entrance', 'closet_fout':'closet', 'living_room_fout':'living_room', 'kitchen_fout':'kitchen', 'bathroom_fout':'bathroom', 'bedroom_fout':'bedroom'})
 
     # Create and start the introspection server for visualization
     sis = smach_ros.IntrospectionServer('server_name', sm, '/SM_ROOT')
