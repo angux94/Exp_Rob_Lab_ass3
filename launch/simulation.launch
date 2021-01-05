@@ -74,5 +74,6 @@
    <param name="time_sleep" type="int" value="10" />
 
    <node name="command_request" pkg="exp_assignment3" type="command_request.py" output="screen" />
-
+   <node name="camera_ball" pkg="exp_assignment3" type="camera_ball.py" output="screen" />
+   
 </launch>

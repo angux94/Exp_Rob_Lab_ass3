@@ -281,13 +281,6 @@ class Play(smach.State):
 
 	self.play_counter = 0
 	self.play_times = 0
-	#Room definitions
-	#entrance = Point(x = 0, y = 0)
-	#closet = Point(x = 0, y = 0)
-	#living_room = Point(x = 0, y = 0)
-	#kitchen = Point(x = 0, y = 0)
-	#bathroom = Point(x = 0, y = 0)
-	#bedroom = Point(x = 0, y = 0)
 
     def room_select(self):
 	"""Function to display the grid and select the destination point
@@ -300,13 +293,7 @@ class Play(smach.State):
     	room = str(raw_input('room: '))
     	print("Thanks! Let's reach the " + room)
 
-	return room
-
-    #def it_exists(self, room):
-	#global entrance, closet, living_room, kitchen, bathroom, bedroom
-	
-	#print('input room: ' + str(eval(room)) + ' exists')
-		
+	return room		
 
 
     def execute(self, userdata):
@@ -486,9 +473,28 @@ class Find(smach.State):
 				   input_keys=['room_in'],
 				   output_keys=['entrance_fout', 'closet_fout', 'living_room_fout', 'kitchen_fout', 'bathroom_fout', 'bedroom_fout'])
         
+	#Publishers and subscribers
+	self.pub_command = rospy.Publisher('/gesture_request', String, queue_size=10)
+	self.pub_color = rospy.Publisher('/color', String, queue_size=10)
+	
+        self.sub_flag = rospy.Subscriber('/arrived_play', Bool, cb_flag)
+
+	self.sub_point = rospy.Subscriber('/point_located', Point, cb_point)
+
+	#Actions
+	self.act_c = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
+
+	#rospy.loginfo('Waiting for action server to start')
+	self.act_c.wait_for_server()
+	#rospy.loginfo('Server started')
+
+	#Initialization
+	self.go_random = True
+	self.coords = MoveBaseGoal() 
+
     def execute(self, userdata):
 
-	global sm_flag
+	global sm_flag, sm_point
         time.sleep(1)
         rospy.loginfo('Executing state FIND')
 
@@ -497,19 +503,94 @@ class Find(smach.State):
         while not rospy.is_shutdown():
                 
 		if(userdata.room_in == 'entrance'):
-			userdata.entrance_fout = Point(x = -2, y = 5)
-			print("Entrance located at x:-2 y:5")
-			return 'found'
+			#userdata.entrance_fout = Point(x = -2, y = 5)
+			#print("Entrance located at x:-2 y:5")
+			#return 'found'
+			if(self.go_random == True):
+
+				self.go_random = False
+				#userdata.living_room_fout = Point(x = -3, y = -2)
+				self.coords.target_pose.pose.position.x = -3
+				self.coords.target_pose.pose.position.y = 7
+
+				self.coords.target_pose.header.frame_id = "map"
+    				self.coords.target_pose.pose.orientation.w = 1.0
+				self.act_c.send_goal(self.coords)
+				print("Going to a random point x: -3 y: 7")
+				# Waits for the server to finish performing the action.
+				self.act_c.wait_for_result()
+			
+			else:
+				self.pub_command.publish("play")
+				self.pub_color.publish("blue")
+				if sm_flag:
+					sm_flag = False
+                        		time.sleep(1)
+					self.pub_command.publish("stop")
+					userdata.entrance_fout = Point(x = sm_point.x, y = sm_point.y)
+					print("Entrance located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
+					return 'found'
+
 		if(userdata.room_in == 'closet'):
-			userdata.closet_fout = Point(x = -3, y = 5)
-			print("Closet located at x:-3 y:5")
-			return 'found'
+			
+			if(self.go_random == True):
+
+				self.go_random = False
+				#userdata.living_room_fout = Point(x = -3, y = -2)
+				self.coords.target_pose.pose.position.x = -3
+				self.coords.target_pose.pose.position.y = 7
+
+				self.coords.target_pose.header.frame_id = "map"
+    				self.coords.target_pose.pose.orientation.w = 1.0
+				self.act_c.send_goal(self.coords)
+				print("Going to a random point x: -3 y: 7")
+				# Waits for the server to finish performing the action.
+				self.act_c.wait_for_result()
+			
+			else:
+				self.pub_command.publish("play")
+				self.pub_color.publish("pink")
+				if sm_flag:
+					sm_flag = False
+                        		time.sleep(1)
+					self.pub_command.publish("stop")
+					userdata.closet_fout = Point(x = sm_point.x, y = sm_point.y)
+					print("Closet located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
+					return 'found'
+
 		if(userdata.room_in == 'living room'):
-			userdata.living_room_fout = Point(x = -3, y = 5)
-			print("Living room located at x:-3 y:5")
-			return 'found'
+						
+			if(self.go_random == True):
+
+				self.go_random = False
+				#userdata.living_room_fout = Point(x = -3, y = -2)
+				self.coords.target_pose.pose.position.x = -3
+				self.coords.target_pose.pose.position.y = -2
+
+				self.coords.target_pose.header.frame_id = "map"
+    				self.coords.target_pose.pose.orientation.w = 1.0
+				self.act_c.send_goal(self.coords)
+				print("Going to a random point x: -3 y: -2")
+				# Waits for the server to finish performing the action.
+				self.act_c.wait_for_result()
+			
+			else:
+				self.pub_command.publish("play")
+				self.pub_color.publish("green")
+				if sm_flag:
+					sm_flag = False
+                        		time.sleep(1)
+					self.pub_command.publish("stop")
+					userdata.living_room_fout = Point(x = sm_point.x, y = sm_point.y)
+					print("Living room located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
+					return 'found'
+
+				#else:
+				#	print("Couldn't find the living room, going to a new location to search")
+				#	self.go_random = True
+
 		if(userdata.room_in == 'kitchen'):
-			userdata.kitchen_fout = Point(x = -3, y = 5)
+			userdata.kitchen_fout = Point(x = -3, y = -2)
 			print("Kitchen located at x:-3 y:5")
 			return 'found'
 		if(userdata.room_in == 'bathroom'):
@@ -534,7 +615,7 @@ class Find(smach.State):
 # Callback functions
 sm_command = None
 sm_flag = None
-
+sm_point = Point()
 def cb_command(data):
     """ callback to get the command received on the terminal
     """
@@ -548,6 +629,10 @@ def cb_flag(data):
     global sm_flag
     sm_flag = data.data
 
+def cb_point(data):
+    global sm_point
+    sm_point.x = data.x
+    sm_point.y = data.y
 
 
 # main

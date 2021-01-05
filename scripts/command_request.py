@@ -34,7 +34,7 @@ def main():
 
 	global status
 
-	time.sleep(15)
+	time.sleep(20)
 	# Publishers and subscribers
 	pub = rospy.Publisher('/command', String, queue_size=10)	
 	sub = rospy.Subscriber('/status', String, callback)
