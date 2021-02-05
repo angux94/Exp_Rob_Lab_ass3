@@ -311,7 +311,7 @@ class Play(smach.State):
 	
 	#Get play times each time we run the play state
 	if(self.play_counter == 0):	
-		self.play_times = random.randrange(1,3)
+		self.play_times = 10#random.randrange(1,3)
 
 	
 	
@@ -491,6 +491,9 @@ class Find(smach.State):
 	#Initialization
 	self.go_random = True
 	self.coords = MoveBaseGoal() 
+	
+	self.my_time = 0
+	self.start_time = 0
 
     def execute(self, userdata):
 
@@ -506,6 +509,7 @@ class Find(smach.State):
 			#userdata.entrance_fout = Point(x = -2, y = 5)
 			#print("Entrance located at x:-2 y:5")
 			#return 'found'
+			self.pub_color.publish("blue")
 			if(self.go_random == True):
 
 				self.go_random = False
@@ -519,17 +523,26 @@ class Find(smach.State):
 				print("Going to a random point x: -3 y: 7")
 				# Waits for the server to finish performing the action.
 				self.act_c.wait_for_result()
-			
+				self.start_time = time.time()
+				self.my_time = 0			
+			#Once it arrives, start searching for the ball
 			else:
+				self.my_time = time.time()-self.start_time
+				#print(self.my_time)
 				self.pub_command.publish("play")
-				self.pub_color.publish("blue")
 				if sm_flag:
 					sm_flag = False
                         		time.sleep(1)
 					self.pub_command.publish("stop")
 					userdata.entrance_fout = Point(x = sm_point.x, y = sm_point.y)
+					self.go_random = True
+					print("Found at: " + str(self.my_time))
 					print("Entrance located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
 					return 'found'
+
+				elif(self.my_time >= 120):
+					print("Couldn't find the entrance, going to a new location to search")
+					self.go_random = True
 
 		if(userdata.room_in == 'closet'):
 			
@@ -537,26 +550,37 @@ class Find(smach.State):
 
 				self.go_random = False
 				#userdata.living_room_fout = Point(x = -3, y = -2)
-				self.coords.target_pose.pose.position.x = -3
-				self.coords.target_pose.pose.position.y = 7
+				self.coords.target_pose.pose.position.x = -4
+				self.coords.target_pose.pose.position.y = 2
 
 				self.coords.target_pose.header.frame_id = "map"
     				self.coords.target_pose.pose.orientation.w = 1.0
 				self.act_c.send_goal(self.coords)
-				print("Going to a random point x: -3 y: 7")
+				print("Going to a random point x: -4 y: 2")
 				# Waits for the server to finish performing the action.
 				self.act_c.wait_for_result()
-			
+				self.start_time = time.time()
+				self.my_time = 0			
+			#Once it arrives, start searching for the ball
 			else:
+				self.my_time = time.time()-self.start_time
+				print(self.my_time)
 				self.pub_command.publish("play")
-				self.pub_color.publish("pink")
+				self.pub_color.publish("red")
 				if sm_flag:
 					sm_flag = False
                         		time.sleep(1)
 					self.pub_command.publish("stop")
 					userdata.closet_fout = Point(x = sm_point.x, y = sm_point.y)
+					self.go_random = True
+					print("Found at: " + str(self.my_time))
 					print("Closet located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
 					return 'found'
+
+				elif(self.my_time >= 120):
+					print("Couldn't find the closet, going to a new location to search")
+					self.go_random = True
+
 
 		if(userdata.room_in == 'living room'):
 						
@@ -573,8 +597,12 @@ class Find(smach.State):
 				print("Going to a random point x: -3 y: -2")
 				# Waits for the server to finish performing the action.
 				self.act_c.wait_for_result()
-			
+				self.start_time = time.time()
+				self.my_time = 0
+			#Once it arrives, start searching for the ball
 			else:
+				self.my_time = time.time()-self.start_time
+				print(self.my_time)
 				self.pub_command.publish("play")
 				self.pub_color.publish("green")
 				if sm_flag:
@@ -582,25 +610,130 @@ class Find(smach.State):
                         		time.sleep(1)
 					self.pub_command.publish("stop")
 					userdata.living_room_fout = Point(x = sm_point.x, y = sm_point.y)
+					self.go_random = True
+					print("Found at: " + str(self.my_time))
 					print("Living room located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
 					return 'found'
 
-				#else:
-				#	print("Couldn't find the living room, going to a new location to search")
-				#	self.go_random = True
+				elif(self.my_time >= 120):
+					print("Couldn't find the living room, going to a new location to search")
+					self.go_random = True
 
 		if(userdata.room_in == 'kitchen'):
-			userdata.kitchen_fout = Point(x = -3, y = -2)
-			print("Kitchen located at x:-3 y:5")
-			return 'found'
+
+			if(self.go_random == True):
+
+				self.go_random = False
+				#userdata.living_room_fout = Point(x = -3, y = -2)
+				self.coords.target_pose.pose.position.x = 2
+				self.coords.target_pose.pose.position.y = -7
+
+				self.coords.target_pose.header.frame_id = "map"
+    				self.coords.target_pose.pose.orientation.w = 1.0
+				self.act_c.send_goal(self.coords)
+				print("Going to a random point x: 2 y: -7")
+				# Waits for the server to finish performing the action.
+				self.act_c.wait_for_result()
+				self.start_time = time.time()
+				self.my_time = 0
+
+			#Once it arrives, start searching for the ball
+			else:
+				self.my_time = time.time()-self.start_time
+				print(self.my_time)
+				self.pub_command.publish("play")
+				self.pub_color.publish("yellow")
+				if sm_flag:
+					sm_flag = False
+                        		time.sleep(1)
+					self.pub_command.publish("stop")
+					userdata.kitchen_fout = Point(x = sm_point.x, y = sm_point.y)
+					self.go_random = True
+					print("Found at: " + str(self.my_time))
+					print("Kitchen located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
+					return 'found'
+
+				elif(self.my_time >= 120):
+					print("Couldn't find the kitchen, going to a new location to search")
+					self.go_random = True
+
 		if(userdata.room_in == 'bathroom'):
-			userdata.bathroom_fout = Point(x = -3, y = 5)
-			print("Bathroom located at x:-3 y:5")
-			return 'found'	
+			
+			if(self.go_random == True):
+
+				self.go_random = False
+				#userdata.living_room_fout = Point(x = -3, y = -2)
+				self.coords.target_pose.pose.position.x = 4
+				self.coords.target_pose.pose.position.y = -4
+
+				self.coords.target_pose.header.frame_id = "map"
+    				self.coords.target_pose.pose.orientation.w = 1.0
+				self.act_c.send_goal(self.coords)
+				print("Going to a random point x: 4 y: -4")
+				# Waits for the server to finish performing the action.
+				self.act_c.wait_for_result()
+				self.start_time = time.time()
+				self.my_time = 0
+
+			#Once it arrives, start searching for the ball
+			else:
+				self.my_time = time.time()-self.start_time
+				print(self.my_time)
+				self.pub_command.publish("play")
+				self.pub_color.publish("pink")
+				if sm_flag:
+					sm_flag = False
+                        		time.sleep(1)
+					self.pub_command.publish("stop")
+					userdata.bathroom_fout = Point(x = sm_point.x, y = sm_point.y)
+					self.go_random = True
+					print("Found at: " + str(self.my_time))
+					print("Bathroom located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
+					return 'found'
+
+				elif(self.my_time >= 120):
+					print("Couldn't find the bathroom, going to a new location to search")
+					self.go_random = True
+
 		if(userdata.room_in == 'bedroom'):
-			userdata.bedroom_fout = Point(x = -3, y = 5)
-			print("Bedroom located at x:-3 y:5")
-			return 'found'	
+
+			if(self.go_random == True):
+
+				self.go_random = False
+				#userdata.living_room_fout = Point(x = -3, y = -2)
+				self.coords.target_pose.pose.position.x = 4
+				self.coords.target_pose.pose.position.y = 0
+
+				self.coords.target_pose.header.frame_id = "map"
+    				self.coords.target_pose.pose.orientation.w = 1.0
+				self.act_c.send_goal(self.coords)
+				print("Going to a random point x: 4 y: 0")
+				# Waits for the server to finish performing the action.
+				self.act_c.wait_for_result()
+				self.start_time = time.time()
+				self.my_time = 0
+
+			#Once it arrives, start searching for the ball
+			else:
+				self.my_time = time.time()-self.start_time
+				print(self.my_time)
+				self.pub_command.publish("play")
+				self.pub_color.publish("black")
+				if sm_flag:
+					sm_flag = False
+                        		time.sleep(1)
+					self.pub_command.publish("stop")
+					userdata.bedroom_fout = Point(x = sm_point.x, y = sm_point.y)
+					self.go_random = True
+					print("Found at: " + str(self.my_time))
+					print("Bedroom located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
+					return 'found'
+
+				elif(self.my_time >= 120):
+					print("Couldn't find the bedroom, going to a new location to search")
+					self.go_random = True
+
+				
 		#if sm_flag:
 		#	sm_flag = False
                 #	self.pub_command.publish("play")

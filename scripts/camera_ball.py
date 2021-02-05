@@ -27,7 +27,7 @@ from tf import transformations
 
 VERBOSE = False
 cb_msg = None
-
+cb_color = None
 
 class image_feature:
     """Initialize ros publisher, ros subscriber
@@ -84,6 +84,7 @@ class image_feature:
     def clbk_color(self, data):
 	global cb_color
 	cb_color = data.data
+	
 
     def clbk_odom(self, msg):
     	""" Gets the robot odometry data
@@ -121,14 +122,33 @@ class image_feature:
 	np_arr = np.fromstring(ros_data.data, np.uint8)
 	image_np = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)  # OpenCV >= 3.0:
 	
-	# Range of green to search
-	greenLower = (50, 50, 20)
-	greenUpper = (70, 255, 255)
+	# Range of colors to search
+	if cb_color == 'blue' :
+		color_low = (100, 50, 50) 
+		color_high = (130, 255, 255)
+	if cb_color == 'red' :
+		color_low = (0, 50, 50) 
+		color_high = (5, 255, 255)
+	if cb_color == 'green' :
+		color_low = (50, 50, 50) 
+		color_high = (70, 255, 255)
+	if cb_color == 'yellow':
+		color_low = (25, 50, 50) 
+		color_high = (35, 255, 255)
+	if cb_color == 'pink':
+		color_low = (125, 50, 50)
+		color_high =  (150, 255, 255)
+	if cb_color == 'black':
+		color_low = (0, 0, 0) 
+		color_high = (5,50,50)
+	elif cb_color == None:
+		color_low = (50, 50, 50) 
+		color_high = (70, 255, 255)
 
 	# Image processing to reject posible noisy particles
 	blurred = cv2.GaussianBlur(image_np, (11, 11), 0)
 	hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
-	mask = cv2.inRange(hsv, greenLower, greenUpper)
+	mask = cv2.inRange(hsv, color_low, color_high)
 	mask = cv2.erode(mask, None, iterations=2)
 	mask = cv2.dilate(mask, None, iterations=2)
 	cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
@@ -181,7 +201,7 @@ class image_feature:
 		    vel = Twist()
 		    vel.angular.z = 0.5
 		    self.vel_pub.publish(vel)
-		    print(yaw_)
+		    #print(yaw_)
 		    # Reset the state to not arrived
 		    self.arrive = False
 
