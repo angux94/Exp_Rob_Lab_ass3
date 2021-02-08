@@ -20,26 +20,27 @@ class Normal(smach.State):
     """ Class for the NORMAL state
 
     Robot walks randomly for a random amount of times.
-    If "play" command is received, ball appears and robot goes to PLAY state.
+    If "play" command is received, robot goes to PLAY state.
     If no command is received, eventually goes to SLEEP.
 
     State Machine:
     	NORMAL('play') -> PLAY (if play command received)
     	NORMAL('sleep') -> SLEEP (if no command received)
 
-    Parameters:
-    	normal_times: (int) Number of random walks to do
-
     Attributes:
     	normal_counter: (int)
     	coords: (motion_plan.msg.PlanningGoal)
+	good_coord: (bool)
+
+    Publishers:
+	pub: publishes (std_msgs.String) to /status
 
     Subscribers:
     	sub_command: subscriber (std_msgs.String) to /command
 		subscribe to get the play command to enter the PLAY state
 
     Actions:
-    	act_c: Client for action /move_goal
+    	act_c: Client for action /move_base
 		calls the action to move the robot to the specified coordinates
 	
 		goal: geometry_msgs.PoseStamped
@@ -63,6 +64,7 @@ class Normal(smach.State):
         # Initializations
         self.normal_counter = 1
 	self.coords = MoveBaseGoal() 
+	self.good_coord = False
 
     def execute(self, userdata):
 
@@ -85,11 +87,27 @@ class Normal(smach.State):
 	    self.pub.publish('normal')
 	    
 	    # Amount of random walks before sleeping
-            normal_times = rospy.get_param('normal_times',random.randrange(1,5))
+            normal_times = random.randrange(1,5)
 
-            x = -3#random.randrange(-6,6)
-            y = 6#random.randrange(-8,8)
-	    z = 0
+	    self.good_coord = False
+	    while(self.good_coord == False):
+            	x = random.randrange(-6,6)
+            	y = random.randrange(-8,8)
+	    	z = 0
+		
+		#Check if the random coordinates are reachable in the map
+		if x >= 1 and y >= 4:
+			self.good_coord = False
+			print('Bad coord 1')
+		elif x <= -1 and y <= -6:
+			self.good_coord = False
+			print('Bad coord 2')
+		elif x >= 1 and x <=2 and y >= 1 and y <= 3:
+			self.good_coord = False
+			print('Bad coord 3')
+		else:
+			print('good coord')
+			self.good_coord = True
 
             normal_coord = Point(x = x, y = y, z = z)
 
@@ -123,10 +141,22 @@ class Normal(smach.State):
 
                 # If not, continue with the behavior
                 if(self.normal_counter < normal_times):
-
-                    x = -2#random.randrange(-6,6)
-                    y = 6#random.randrange(-8,8)
-		    z = 0
+		    
+		    self.good_coord = False
+                    while(self.good_coord == False):
+            		x = random.randrange(-6,6)
+            		y = random.randrange(-8,8)
+	    		z = 0
+		
+			#Check if the random coordinates are reachable in the map
+			if x >= 1 and y >= 4:
+				self.good_coord = False
+			elif x <= -1 and y <= -6:
+				self.good_coord = False
+			elif x >= 1 and x <=2 and y >= 1 and y <= 3:
+				self.good_coord = False
+			else:
+				self.good_coord = True
 
                     normal_coord = Point(x = x, y = y, z = z)
                     
@@ -166,15 +196,15 @@ class Sleep(smach.State):
     	SLEEP('wait') -> NORMAL (after time passes)
 
     Parameters:
-    	sleep_x: (double) Sleep x coordinate (-8,8)
-    	sleep_y: (double) Sleep y coordinate (-8,8)
+    	sleep_x: (double) Sleep x coordinate 
+    	sleep_y: (double) Sleep y coordinate
     	time_sleep: (int) Sleeping time (1,10)
 
     Attributes:
     	coords: (motion_plan.msg.PlanningGoal)
 
     Actions:
-    	act_c: Client for action /move_goal
+    	act_c: Client for action /move_base
 		calls the action to move the robot to the specified coordinates
 
 		goal: geometry_msgs.PoseStamped
@@ -237,25 +267,37 @@ class Sleep(smach.State):
 class Play(smach.State):
     """ Class for the PLAY state
 
-    Robot plays for as long as the ball is in the environment, the ball enters when the 'play' 
-    command is received and the coordinates are given. Ball disapears once the command 'stop'
-    arrives, which sends the ball out of the environment.
+    Robot plays for a said amount of times, going towards the human to know which room to find. If the room is known, goes to the room, if not, goes to FIND state to find the room.
 
     State Machine:
-    	PLAY('stop') -> NORMAL (if stop command is received)
+    	PLAY('find') -> FIND (if room is unknown)
+	PLAY('stop') -> NORMAL (when behavior ends)
+
+    State inputs:
+	entrance_pin, closet_pin, living_room_pin, kitchen_pin, bathroom_pin, bedroom_pin
+
+    State outputs:
+	room_out
 
     Attributes:
-    	play_counter: int
-
-    Publishers:
-    	pub_command: publisher (std_msgs.String) to /gesture_request
-		publishes the request to enter ball desired coordinates
+    	play_counter: (int)
+	play_times: (int)
+	human: (geometry_msgs.Point) human coordinates
+	coords: (motion_plan.msg.PlanningGoal)
     
     Subscribers:
     	sub_flag: subscriber (std_msgs.Bool) to /arrived_play
 		checks if the robot reached the ball
     	sub_command: subscriber (std_msgs.String) to /command
 		subscribe to get the stop command to exit the PLAY state
+
+    Actions:
+    	act_c: Client for action /move_base
+		calls the action to move the robot to the specified coordinates
+
+		goal: geometry_msgs.PoseStamped
+
+		result: geometry_msgs.Pose
     """
     def __init__(self):
         smach.State.__init__(self, outcomes=['stop', 'find'],
@@ -263,8 +305,6 @@ class Play(smach.State):
 				   output_keys=['room_out'])
 
         #Publishers and subscribers
-        self.pub_command = rospy.Publisher('/gesture_request', String, queue_size=10)
-	
 	self.sub_command = rospy.Subscriber('/command', String, cb_command)
         self.sub_flag = rospy.Subscriber('/arrived_play', Bool, cb_flag)
 
@@ -283,37 +323,39 @@ class Play(smach.State):
 	self.play_times = 0
 
     def room_select(self):
-	"""Function to display the grid and select the destination point
-
+	"""Function to talk to human and select the destination point
+	
+	Rooms:
+		entrance
+		closet
+		living room
+		kitchen
+		bathroom
+		bedroom	
+	
 	Returns:
 		room
 			The room where we want to play
 	"""
+	
 	print("Human reached! Please tell me a room")
     	room = str(raw_input('room: '))
-    	print("Thanks! Let's reach the " + room)
+	if room == 'stop':
+		print('we stop playing then')
+	else:
+    		print("Thanks! Let's reach the " + room)
 
 	return room		
 
 
     def execute(self, userdata):
-	global sm_flag, room_select, it_exists
+	global sm_flag, room_select
         time.sleep(1)
         rospy.loginfo('Executing state PLAY')
-
-	"""
-	#Gets first play coordinates
-	self.pub_command.publish("play")
-
-	#We make sure we haven't arrived to the play destination
-	sm_flag = False
-	"""
 	
 	#Get play times each time we run the play state
 	if(self.play_counter == 0):	
-		self.play_times = 10#random.randrange(1,3)
-
-	
+		self.play_times = random.randrange(1,4)
 	
         while not rospy.is_shutdown():       
                 
@@ -324,6 +366,7 @@ class Play(smach.State):
 			self.play_counter += 1
 			print("We are playing " + str(self.play_times) + " times")
 			print("Counter: " + str(self.play_counter))
+
 			#Go towards the human
 			self.coords.target_pose.pose.position.x = self.human.x
 			self.coords.target_pose.pose.position.y = self.human.y
@@ -340,12 +383,13 @@ class Play(smach.State):
 			userdata.room_out = room
 
 			if(room == "entrance"):
+				#Check if the room position is known, if not, find it
 				if(userdata.entrance_pin.x==0 and userdata.entrance_pin.y==0):
 					print("Entrance is unknown, let's find it")
 					return 'find'
 				else:				
 					print(userdata.entrance_pin)
-					#self.it_exists(userdata.room_out)
+					
 					#Go towards the point
 					self.coords.target_pose.pose.position.x = userdata.entrance_pin.x
 					self.coords.target_pose.pose.position.y = userdata.entrance_pin.y
@@ -358,12 +402,13 @@ class Play(smach.State):
 					self.act_c.wait_for_result()
 
 			if(room == "closet"):
+				#Check if the room position is known, if not, find it
 				if(userdata.closet_pin.x==0 and userdata.closet_pin.y==0):
 					print("Closet is unknown, let's find it")
 					return 'find'
 				else:				
 					print(userdata.closet_pin)
-					#self.it_exists(userdata.room_out)
+
 					#Go towards the point
 					self.coords.target_pose.pose.position.x = userdata.closet_pin.x
 					self.coords.target_pose.pose.position.y = userdata.closet_pin.y
@@ -376,12 +421,13 @@ class Play(smach.State):
 					self.act_c.wait_for_result()
 
 			if(room == "living room"):
+				#Check if the room position is known, if not, find it
 				if(userdata.living_room_pin.x==0 and userdata.living_room_pin.y==0):
 					print("Living room is unknown, let's find it")
 					return 'find'
 				else:				
 					print(userdata.living_room_pin)
-					#self.it_exists(userdata.room_out)
+
 					#Go towards the point
 					self.coords.target_pose.pose.position.x = userdata.living_room_pin.x
 					self.coords.target_pose.pose.position.y = userdata.living_room_pin.y
@@ -394,12 +440,13 @@ class Play(smach.State):
 					self.act_c.wait_for_result()
 
 			if(room == "kitchen"):
+				#Check if the room position is known, if not, find it
 				if(userdata.kitchen_pin.x==0 and userdata.kitchen_pin.y==0):
 					print("Kitchen is unknown, let's find it")
 					return 'find'
 				else:				
 					print(userdata.kitchen_pin)
-					#self.it_exists(userdata.room_out)
+
 					#Go towards the point
 					self.coords.target_pose.pose.position.x = userdata.kitchen_pin.x
 					self.coords.target_pose.pose.position.y = userdata.kitchen_pin.y
@@ -412,12 +459,13 @@ class Play(smach.State):
 					self.act_c.wait_for_result()
 
 			if(room == "bathroom"):
+				#Check if the room position is known, if not, find it
 				if(userdata.bathroom_pin.x==0 and userdata.bathroom_pin.y==0):
 					print("Bathroom is unknown, let's find it")
 					return 'find'
 				else:				
 					print(userdata.bathroom_pin)
-					#self.it_exists(userdata.room_out)
+
 					#Go towards the point
 					self.coords.target_pose.pose.position.x = userdata.bathroom_pin.x
 					self.coords.target_pose.pose.position.y = userdata.bathroom_pin.y
@@ -430,12 +478,13 @@ class Play(smach.State):
 					self.act_c.wait_for_result()
 
 			if(room == "bedroom"):
+				#Check if the room position is known, if not, find it
 				if(userdata.bedroom_pin.x==0 and userdata.bedroom_pin.y==0):
 					print("Bedroom is unknown, let's find it")
 					return 'find'
 				else:				
 					print(userdata.bedroom_pin)
-					#self.it_exists(userdata.room_out)
+
 					#Go towards the point
 					self.coords.target_pose.pose.position.x = userdata.bedroom_pin.x
 					self.coords.target_pose.pose.position.y = userdata.bedroom_pin.y
@@ -451,21 +500,49 @@ class Play(smach.State):
 			#Reset play counter
 			self.play_counter = 0
 			return 'stop'
-		#if sm_flag:
-		#	sm_flag = False
-                #	self.pub_command.publish("play")
-                #        time.sleep(1)
-		
-		if(sm_command == "stop"):
-			#self.pub_command.publish("stop")
-			#print("Ball dissapeared!")
-			#time.sleep(10)
-			return 'stop'
+
 	
 # define state FIND
 class Find(smach.State):
     """ Class for the FIND state
 
+    Robot tries to find the desired room going to a random location, and scanning the room until the desired color ball is found, if not, moves to another location and repeats.
+
+    State Machine:
+    	FIND('found') -> PLAY (if ball is found)
+
+    State inputs:
+	room_in
+
+    State outputs:
+	entrance_fout, closet_fout, living_room_fout, kitchen_fout, bathroom_fout, bedroom_fout
+
+    Attributes:
+    	go_random: (bool)
+	good_coords: (bool)
+	coords: (motion_plan.msg.PlanningGoal)
+	my_time: (int)
+	start_time: (int)
+
+    Publishers:
+    	pub_command: publisher (std_msgs.String) to /gesture_request
+		publishes the request to enter ball desired coordinates
+	pub_color: publisher (std_msgs.String) to /color
+		publishes the desired ball color corresponding to the room
+    
+    Subscribers:
+    	sub_flag: subscriber (std_msgs.Bool) to /arrived_play
+		checks if the robot reached the ball
+    	sub_point: subscriber (geometry_msgs.Point) to /point_located
+		subscribe to get the point for which the ball is located
+
+    Actions:
+    	act_c: Client for action /move_base
+		calls the action to move the robot to the specified coordinates
+
+		goal: geometry_msgs.PoseStamped
+
+		result: geometry_msgs.Pose
    
     """
     def __init__(self):
@@ -490,6 +567,7 @@ class Find(smach.State):
 
 	#Initialization
 	self.go_random = True
+	self.good_coord = False
 	self.coords = MoveBaseGoal() 
 	
 	self.my_time = 0
@@ -506,30 +584,49 @@ class Find(smach.State):
         while not rospy.is_shutdown():
                 
 		if(userdata.room_in == 'entrance'):
-			#userdata.entrance_fout = Point(x = -2, y = 5)
-			#print("Entrance located at x:-2 y:5")
-			#return 'found'
-			self.pub_color.publish("blue")
+
 			if(self.go_random == True):
 
 				self.go_random = False
-				#userdata.living_room_fout = Point(x = -3, y = -2)
-				self.coords.target_pose.pose.position.x = -3
-				self.coords.target_pose.pose.position.y = 7
+				#userdata.living_room_fout = Point(x = -3, y = 7)
+				self.good_coord = False
+				while(self.good_coord == False):
+            				x = random.randrange(-6,6)
+            				y = random.randrange(-8,8)
+	    				z = 0
+		
+					#Check if the random coordinates are reachable in the map
+					if x >= 1 and y >= 4:
+						self.good_coord = False
+					elif x <= -1 and y <= -6:
+						self.good_coord = False
+					elif x >= 1 and x <=2 and y >= 1 and y <= 3:
+						self.good_coord = False
+					else:
+						self.good_coord = True
+
+
+				self.coords.target_pose.pose.position.x = x
+				self.coords.target_pose.pose.position.y = y
 
 				self.coords.target_pose.header.frame_id = "map"
     				self.coords.target_pose.pose.orientation.w = 1.0
 				self.act_c.send_goal(self.coords)
-				print("Going to a random point x: -3 y: 7")
+				print("Going to a random point x: " + str(x) + " y: " + str(y))
 				# Waits for the server to finish performing the action.
 				self.act_c.wait_for_result()
+
 				self.start_time = time.time()
-				self.my_time = 0			
+				self.my_time = 0
+			
 			#Once it arrives, start searching for the ball
 			else:
 				self.my_time = time.time()-self.start_time
-				#print(self.my_time)
+				
+				# Start "watching" the camera
 				self.pub_command.publish("play")
+				# Tell which color to look for
+				self.pub_color.publish("blue")
 				if sm_flag:
 					sm_flag = False
                         		time.sleep(1)
@@ -542,6 +639,7 @@ class Find(smach.State):
 
 				elif(self.my_time >= 120):
 					print("Couldn't find the entrance, going to a new location to search")
+					self.pub_command.publish("search")
 					self.go_random = True
 
 		if(userdata.room_in == 'closet'):
@@ -549,14 +647,31 @@ class Find(smach.State):
 			if(self.go_random == True):
 
 				self.go_random = False
-				#userdata.living_room_fout = Point(x = -3, y = -2)
-				self.coords.target_pose.pose.position.x = -4
-				self.coords.target_pose.pose.position.y = 2
+				#userdata.living_room_fout = Point(x = -4, y = 2)
+				self.good_coord = False
+				while(self.good_coord == False):
+            				x = random.randrange(-6,6)
+            				y = random.randrange(-8,8)
+	    				z = 0
+		
+					#Check if the random coordinates are reachable in the map
+					if x >= 1 and y >= 4:
+						self.good_coord = False
+					elif x <= -1 and y <= -6:
+						self.good_coord = False
+					elif x >= 1 and x <=2 and y >= 1 and y <= 3:
+						self.good_coord = False
+					else:
+						self.good_coord = True
+
+
+				self.coords.target_pose.pose.position.x = x
+				self.coords.target_pose.pose.position.y = y
 
 				self.coords.target_pose.header.frame_id = "map"
     				self.coords.target_pose.pose.orientation.w = 1.0
 				self.act_c.send_goal(self.coords)
-				print("Going to a random point x: -4 y: 2")
+				print("Going to a random point x: " + str(x) + " y: " + str(y))
 				# Waits for the server to finish performing the action.
 				self.act_c.wait_for_result()
 				self.start_time = time.time()
@@ -565,7 +680,9 @@ class Find(smach.State):
 			else:
 				self.my_time = time.time()-self.start_time
 				print(self.my_time)
+				# Start "watching" the camera
 				self.pub_command.publish("play")
+				# Tell which color to look for
 				self.pub_color.publish("red")
 				if sm_flag:
 					sm_flag = False
@@ -580,6 +697,7 @@ class Find(smach.State):
 				elif(self.my_time >= 120):
 					print("Couldn't find the closet, going to a new location to search")
 					self.go_random = True
+					self.pub_command.publish("search")
 
 
 		if(userdata.room_in == 'living room'):
@@ -588,13 +706,30 @@ class Find(smach.State):
 
 				self.go_random = False
 				#userdata.living_room_fout = Point(x = -3, y = -2)
-				self.coords.target_pose.pose.position.x = -3
-				self.coords.target_pose.pose.position.y = -2
+				self.good_coord = False
+				while(self.good_coord == False):
+            				x = random.randrange(-6,6)
+            				y = random.randrange(-8,8)
+	    				z = 0
+		
+					#Check if the random coordinates are reachable in the map
+					if x >= 1 and y >= 4:
+						self.good_coord = False
+					elif x <= -1 and y <= -6:
+						self.good_coord = False
+					elif x >= 1 and x <=2 and y >= 1 and y <= 3:
+						self.good_coord = False
+					else:
+						self.good_coord = True
+
+
+				self.coords.target_pose.pose.position.x = x
+				self.coords.target_pose.pose.position.y = y
 
 				self.coords.target_pose.header.frame_id = "map"
     				self.coords.target_pose.pose.orientation.w = 1.0
 				self.act_c.send_goal(self.coords)
-				print("Going to a random point x: -3 y: -2")
+				print("Going to a random point x: " + str(x) + " y: " + str(y))
 				# Waits for the server to finish performing the action.
 				self.act_c.wait_for_result()
 				self.start_time = time.time()
@@ -603,7 +738,9 @@ class Find(smach.State):
 			else:
 				self.my_time = time.time()-self.start_time
 				print(self.my_time)
+				# Start "watching" the camera
 				self.pub_command.publish("play")
+				# Tell which color to look for
 				self.pub_color.publish("green")
 				if sm_flag:
 					sm_flag = False
@@ -618,20 +755,38 @@ class Find(smach.State):
 				elif(self.my_time >= 120):
 					print("Couldn't find the living room, going to a new location to search")
 					self.go_random = True
+					self.pub_command.publish("search")
 
 		if(userdata.room_in == 'kitchen'):
 
 			if(self.go_random == True):
 
 				self.go_random = False
-				#userdata.living_room_fout = Point(x = -3, y = -2)
-				self.coords.target_pose.pose.position.x = 2
-				self.coords.target_pose.pose.position.y = -7
+				#userdata.living_room_fout = Point(x = 2, y = -7)
+				self.good_coord = False
+				while(self.good_coord == False):
+            				x = random.randrange(-6,6)
+            				y = random.randrange(-8,8)
+	    				z = 0
+		
+					#Check if the random coordinates are reachable in the map
+					if x >= 1 and y >= 4:
+						self.good_coord = False
+					elif x <= -1 and y <= -6:
+						self.good_coord = False
+					elif x >= 1 and x <=2 and y >= 1 and y <= 3:
+						self.good_coord = False
+					else:
+						self.good_coord = True
+
+
+				self.coords.target_pose.pose.position.x = x
+				self.coords.target_pose.pose.position.y = y
 
 				self.coords.target_pose.header.frame_id = "map"
     				self.coords.target_pose.pose.orientation.w = 1.0
 				self.act_c.send_goal(self.coords)
-				print("Going to a random point x: 2 y: -7")
+				print("Going to a random point x: " + str(x) + " y: " + str(y))
 				# Waits for the server to finish performing the action.
 				self.act_c.wait_for_result()
 				self.start_time = time.time()
@@ -641,7 +796,9 @@ class Find(smach.State):
 			else:
 				self.my_time = time.time()-self.start_time
 				print(self.my_time)
+				# Start "watching" the camera
 				self.pub_command.publish("play")
+				# Tell which color to look for
 				self.pub_color.publish("yellow")
 				if sm_flag:
 					sm_flag = False
@@ -656,20 +813,38 @@ class Find(smach.State):
 				elif(self.my_time >= 120):
 					print("Couldn't find the kitchen, going to a new location to search")
 					self.go_random = True
+					self.pub_command.publish("search")
 
 		if(userdata.room_in == 'bathroom'):
 			
 			if(self.go_random == True):
 
 				self.go_random = False
-				#userdata.living_room_fout = Point(x = -3, y = -2)
-				self.coords.target_pose.pose.position.x = 4
-				self.coords.target_pose.pose.position.y = -4
+				#userdata.living_room_fout = Point(x = 4, y = -4)
+				self.good_coord = False
+				while(self.good_coord == False):
+            				x = random.randrange(-6,6)
+            				y = random.randrange(-8,8)
+	    				z = 0
+		
+					#Check if the random coordinates are reachable in the map
+					if x >= 1 and y >= 4:
+						self.good_coord = False
+					elif x <= -1 and y <= -6:
+						self.good_coord = False
+					elif x >= 1 and x <=2 and y >= 1 and y <= 3:
+						self.good_coord = False
+					else:
+						self.good_coord = True
+
+
+				self.coords.target_pose.pose.position.x = x
+				self.coords.target_pose.pose.position.y = y
 
 				self.coords.target_pose.header.frame_id = "map"
     				self.coords.target_pose.pose.orientation.w = 1.0
 				self.act_c.send_goal(self.coords)
-				print("Going to a random point x: 4 y: -4")
+				print("Going to a random point x: " + str(x) + " y: " + str(y))
 				# Waits for the server to finish performing the action.
 				self.act_c.wait_for_result()
 				self.start_time = time.time()
@@ -679,7 +854,9 @@ class Find(smach.State):
 			else:
 				self.my_time = time.time()-self.start_time
 				print(self.my_time)
+				# Start "watching" the camera
 				self.pub_command.publish("play")
+				# Tell which color to look for
 				self.pub_color.publish("pink")
 				if sm_flag:
 					sm_flag = False
@@ -694,20 +871,38 @@ class Find(smach.State):
 				elif(self.my_time >= 120):
 					print("Couldn't find the bathroom, going to a new location to search")
 					self.go_random = True
+					self.pub_command.publish("search")
 
 		if(userdata.room_in == 'bedroom'):
 
 			if(self.go_random == True):
 
 				self.go_random = False
-				#userdata.living_room_fout = Point(x = -3, y = -2)
-				self.coords.target_pose.pose.position.x = 4
-				self.coords.target_pose.pose.position.y = 0
+				#userdata.living_room_fout = Point(x = 4, y = 0)
+				self.good_coord = False
+				while(self.good_coord == False):
+            				x = random.randrange(-6,6)
+            				y = random.randrange(-8,8)
+	    				z = 0
+		
+					#Check if the random coordinates are reachable in the map
+					if x >= 1 and y >= 4:
+						self.good_coord = False
+					elif x <= -1 and y <= -6:
+						self.good_coord = False
+					elif x >= 1 and x <=2 and y >= 1 and y <= 3:
+						self.good_coord = False
+					else:
+						self.good_coord = True
+
+
+				self.coords.target_pose.pose.position.x = x
+				self.coords.target_pose.pose.position.y = y
 
 				self.coords.target_pose.header.frame_id = "map"
     				self.coords.target_pose.pose.orientation.w = 1.0
 				self.act_c.send_goal(self.coords)
-				print("Going to a random point x: 4 y: 0")
+				print("Going to a random point x: " + str(x) + " y: " + str(y))
 				# Waits for the server to finish performing the action.
 				self.act_c.wait_for_result()
 				self.start_time = time.time()
@@ -717,7 +912,9 @@ class Find(smach.State):
 			else:
 				self.my_time = time.time()-self.start_time
 				print(self.my_time)
+				# Start "watching" the camera
 				self.pub_command.publish("play")
+				# Tell which color to look for
 				self.pub_color.publish("black")
 				if sm_flag:
 					sm_flag = False
@@ -732,18 +929,8 @@ class Find(smach.State):
 				elif(self.my_time >= 120):
 					print("Couldn't find the bedroom, going to a new location to search")
 					self.go_random = True
+					self.pub_command.publish("search")
 
-				
-		#if sm_flag:
-		#	sm_flag = False
-                #	self.pub_command.publish("play")
-                #        time.sleep(1)
-		
-		#if(sm_command == "stop"):
-		#	self.pub_command.publish("stop")
-		#	print("Ball dissapeared!")
-		#	time.sleep(10)
-		#	return 'stop'
 
 # Callback functions
 sm_command = None
@@ -794,6 +981,7 @@ def main():
     # Create a SMACH state machine
     sm = smach.StateMachine(outcomes=['COORDS'])
 
+    # State machine transitions definitions
     sm.userdata.entrance = Point()
     sm.userdata.closet = Point()
     sm.userdata.living_room = Point()

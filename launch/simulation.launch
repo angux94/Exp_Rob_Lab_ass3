@@ -68,7 +68,6 @@
 
    <!--node pkg="exp_assignment3" type="user_interface.py" name="user_interface" output="screen" /-->
    <node name="state_machine" pkg="exp_assignment3" type="state_machine.py" output="screen" />
-   <param name="normal_times" type="int" value="1" />
    <param name="sleep_x" type="double" value="3.0" />
    <param name="sleep_y" type="double" value="2.5" />
    <param name="time_sleep" type="int" value="10" />

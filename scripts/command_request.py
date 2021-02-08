@@ -11,7 +11,9 @@ from geometry_msgs.msg import Point
 import numpy as np
 import matplotlib.pyplot as plt
 
+# Initialize status as normal
 status = "normal"
+
 def callback(data):
     """ callback to get the status received from the state machine
     """
@@ -23,11 +25,14 @@ def main():
 
 	Expects for the user to write the command 'play' or 'stop' to 
 
-	'play' will ask for coordinates in order to make the ball appear in the environment
-	'stop' will make the ball dissapear of the environment
+	'play' will make the robot play with the human
+	'stop' will make the robot to stop playing
 
 	Publishers:
 		pub: publishes (std_msgs.String) to /command 
+
+	Subscribers:
+		sub: subscribes (std_msgs.String) to /status
 
 	"""
 	rospy.init_node('command_request')
@@ -43,11 +48,12 @@ def main():
 	
 	while not rospy.is_shutdown():
 		if status == "normal":
-			status = "play"
 			# Get command from user
 			txt = raw_input("Write play to play with the robot: \n")
 			if(txt == "Play" or txt == "play" or txt == "PLAY"):
 				txt = "play"
+				print('command play received')
+				status = "play"
 				pub.publish(txt)
 		
 			# Code for invalid comand and retry
@@ -56,6 +62,7 @@ def main():
 				print("Please write a valid command")
 				print("")
 				continue
+
 		rate.sleep()
 
 	rospy.spin()

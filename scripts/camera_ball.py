@@ -37,12 +37,16 @@ class image_feature:
 
 		vel_pub: publishes (grometry_msgs.Twist) to /robot/cmd_vel
 
-		cam_ctrl_pub: publishes (std_msgs.Float64) to /robot/joint1_position_controller/command
-
 		arrived_pub: publishes (std_msgs.Bool) to /arrived_play
+
+		pub_point: published (geometry_msgs.Point) to /point_located
 
 	Subscribers:
 		sub: subscribes (std_msgs.String) to /gesture_request
+
+		sub_color: subscribes (std_msgs.String) to /color
+
+		sub_odom: subscribes (nav_msgs.Odom) to /odom
 
 		subscriber: subscribes to (sensor_msgs.CompressedImage) /robot/camera1/image_raw/compressed   
     """
@@ -201,28 +205,22 @@ class image_feature:
 		    vel = Twist()
 		    vel.angular.z = 0.5
 		    self.vel_pub.publish(vel)
-		    #print(yaw_)
+		    
 		    # Reset the state to not arrived
 		    self.arrive = False
 
-		cv2.imshow('window', image_np)
+		#cv2.imshow('window', image_np)
 		cv2.waitKey(2)
 	
-	# If 'stop' command, start searching for the ball for some time
+	# If 'stop' command, start searching for the ball
 	elif cb_msg == 'stop':
-		#start_time = time.time()
-		#my_time = 0
-		#while (my_time < 10):
-		#	my_time = time.time()-start_time
-		#	vel = Twist()
-		#	vel.angular.z = 0.5
-		#	self.vel_pub.publish(vel)
-		#	cv2.imshow('window', image_np)
-		#	cv2.waitKey(2)
 		cb_msg = None
 
+	# Stop searching for the ball while going to a new location
+	elif cb_msg == 'search':
+		#cv2.imshow('window', image_np)
+		cv2.waitKey(2)
 	else:
-		cv2.imshow('window', image_np)
 		cv2.waitKey(2)
 	# self.subscriber.unregister()
 
