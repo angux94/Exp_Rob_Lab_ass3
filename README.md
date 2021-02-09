@@ -17,14 +17,13 @@ Software Architecture and States Diagrams
 For the software architecture:
 ![](https://github.com/angux94/Exp_Rob_Lab_ass3/blob/main/Exp_Rob_Lab_Assignment3_Architecture.png)
 
-We have now
+The architecture shows how the program is structured and what is the working principle of the program. First the "command_request" node will wait for the user to give an input to the program, which will comunicate it to the "state_machine" node, which will be running the NORMAL state. "state_machine" is the brain of the program, this will come back and forth between NORMAL and SLEEP states, making use of the "move_base" action to move the robot through the environment. Once the command is received, it will trigger the PLAY state, and the robot will ask for a room to the user. If the last one is known, it will use "move_base" action to go to the location, if not, it will use it to go to a random location and then rely on the robot's camera through "camera_ball" to find the colored ball which represents each one of the rooms and obtain its position.
 
 For the State Machine Diagram:
 
 ![](https://github.com/angux94/Exp_Rob_Lab_ass3/blob/main/State%20Machine%20diagram.png)
 
-
-The State Machine has 3 states:
+The State Machine has 4 states:
   - NORMAL: Main state in which the robot walks randomly until the "play" command arrives and goes to PLAY state, if not, goes to SLEEP state.
   - SLEEP: The robot goes to the sleep position and rests for a while, afterwards wakes up and goes to the NORMAL state.
   - PLAY: The robot plays for a set number of times, requesting the room to the human.
@@ -75,6 +74,8 @@ All the executable files are in /scripts folder which are the .py files for each
   -command_request: Node in charge of reading the inputs of the user, "play" or "stop" are the valid commands.
   
   -state_machine: Node in charge of managing the state machine of the program. Will switch through states and maganes the main behavior of the robot. It's also the client of /move_base actons. Is in charge on handling the transitions and checking conditions.
+  
+  -move_base: Node for moving the robot to the given position in the environment, takes into account the map information in order to avoid obstacles found in the map.
 
 - The robot structure files can be found inside /urdf folder under the ex3_arm.xacro and ex3_arm.gazebo name files, which are the ones that define the structure of the robot, and its controlled joint.
 
