@@ -82,10 +82,14 @@ class image_feature:
 	self.start_time = time.time()
 
     def cb_request(self, data):
+	""" Gets the command data
+    	"""
 	global cb_msg
 	cb_msg = data.data
 
     def clbk_color(self, data):
+	""" Gets the color information
+    	"""
 	global cb_color
 	cb_color = data.data
 	
@@ -111,14 +115,14 @@ class image_feature:
     	yaw_ = euler[2]
 
     def callback(self, ros_data):
-	global cb_msg, position_, pose_, yaw_, cb_color
-	
-	'''Callback function of subscribed topic. 
+	"""Callback function of subscribed topic. 
 	Here images get converted and features detected
 	
 	Once the camera detects the ball, starts tracking it and when the robot arrives to the ball, turns it's neck to check its surroundings
 
-	'''
+	"""
+	global cb_msg, position_, pose_, yaw_, cb_color
+	
 	if VERBOSE:
 	        print ('received image of type: "%s"' % ros_data.format)
 
@@ -226,7 +230,7 @@ class image_feature:
 
 
 def main(args):
-    '''Initializes and cleanup ros node'''
+    """Initializes and cleanup ros node"""
     ic = image_feature()
     try:
         rospy.spin()

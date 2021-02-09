@@ -11,7 +11,6 @@ from tf import transformations
 import math
 import actionlib
 import actionlib.msg
-import motion_plan.msg
 import time
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
@@ -962,16 +961,29 @@ def main():
     Creates the state machine, add states and link their outputs.
 
     States:
-    	NORMAL | PLAY | SLEEP
+    	NORMAL | PLAY | SLEEP | FIND
     
     Transitions:
-    	NORMAL -> PLAY
-    	
-	NORMAL -> SLEEP
+    	NORMAL -> PLAY | SLEEP
 
-    	PLAY -> NORMAL
+	PLAY -> NORMAL | FIND
 
     	SLEEP -> NORMAL
+
+	FIND -> PLAY
+
+    Data mappings:
+	entrance - entrance_pin - entrance_fout
+
+	closet - closet_pin - closet_fout
+
+	living_room - living_room_pin - living_room_fout
+
+	kitchen - kitchen_pin - kitchen_fout
+
+	bathroom - bathroom_pin - bathroom_fout
+
+	bedroom - bedroom_pin - bedroom_fout
 
     """
     global sm_command, sm_flag

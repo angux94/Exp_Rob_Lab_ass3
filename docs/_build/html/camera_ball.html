@@ -1,0 +1,262 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>camera_ball module &mdash; Exp Rob Lab Assignment 3 v1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Exp Rob Lab Assignment 3 v1 documentation" href="index.html"/>
+        <link rel="up" title="scripts" href="modules.html"/>
+        <link rel="next" title="command_request module" href="command_request.html"/>
+        <link rel="prev" title="scripts" href="modules.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Exp Rob Lab Assignment 3
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">scripts</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="">camera_ball module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="command_request.html">command_request module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="state_machine.html">state_machine module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Exp Rob Lab Assignment 3</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">scripts</a> &raquo;</li>
+      
+    <li>camera_ball module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/camera_ball.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-camera_ball">
+<span id="camera-ball-module"></span><h1>camera_ball module<a class="headerlink" href="#module-camera_ball" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="camera_ball.image_feature">
+<em class="property">class </em><code class="descclassname">camera_ball.</code><code class="descname">image_feature</code><a class="headerlink" href="#camera_ball.image_feature" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize ros publisher, ros subscriber</p>
+<dl class="docutils">
+<dt>Publishers:</dt>
+<dd><p class="first">image_pub: publishes (sensor_msgs.CompressedImage) to /robot/output/image_raw/compressed</p>
+<p>vel_pub: publishes (grometry_msgs.Twist) to /robot/cmd_vel</p>
+<p>arrived_pub: publishes (std_msgs.Bool) to /arrived_play</p>
+<p class="last">pub_point: published (geometry_msgs.Point) to /point_located</p>
+</dd>
+<dt>Subscribers:</dt>
+<dd><p class="first">sub: subscribes (std_msgs.String) to /gesture_request</p>
+<p>sub_color: subscribes (std_msgs.String) to /color</p>
+<p>sub_odom: subscribes (nav_msgs.Odom) to /odom</p>
+<p class="last">subscriber: subscribes to (sensor_msgs.CompressedImage) /robot/camera1/image_raw/compressed</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="camera_ball.image_feature.callback">
+<code class="descname">callback</code><span class="sig-paren">(</span><em>ros_data</em><span class="sig-paren">)</span><a class="headerlink" href="#camera_ball.image_feature.callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callback function of subscribed topic. 
+Here images get converted and features detected</p>
+<p>Once the camera detects the ball, starts tracking it and when the robot arrives to the ball, turns it&#8217;s neck to check its surroundings</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="camera_ball.image_feature.cb_request">
+<code class="descname">cb_request</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#camera_ball.image_feature.cb_request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the command data</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="camera_ball.image_feature.clbk_color">
+<code class="descname">clbk_color</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#camera_ball.image_feature.clbk_color" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the color information</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="camera_ball.image_feature.clbk_odom">
+<code class="descname">clbk_odom</code><span class="sig-paren">(</span><em>msg</em><span class="sig-paren">)</span><a class="headerlink" href="#camera_ball.image_feature.clbk_odom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the robot odometry data</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="camera_ball.main">
+<code class="descclassname">camera_ball.</code><code class="descname">main</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="headerlink" href="#camera_ball.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes and cleanup ros node</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="command_request.html" class="btn btn-neutral float-right" title="command_request module" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="modules.html" class="btn btn-neutral" title="scripts" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Andres Gutierrez.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

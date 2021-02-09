@@ -1,0 +1,439 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>state_machine module &mdash; Exp Rob Lab Assignment 3 v1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Exp Rob Lab Assignment 3 v1 documentation" href="index.html"/>
+        <link rel="up" title="scripts" href="modules.html"/>
+        <link rel="prev" title="command_request module" href="command_request.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Exp Rob Lab Assignment 3
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">scripts</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="camera_ball.html">camera_ball module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="command_request.html">command_request module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">state_machine module</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Exp Rob Lab Assignment 3</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="modules.html">scripts</a> &raquo;</li>
+      
+    <li>state_machine module</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/state_machine.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-state_machine">
+<span id="state-machine-module"></span><h1>state_machine module<a class="headerlink" href="#module-state_machine" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="state_machine.Find">
+<em class="property">class </em><code class="descclassname">state_machine.</code><code class="descname">Find</code><a class="headerlink" href="#state_machine.Find" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">smach.state.State</span></code></p>
+<p>Class for the FIND state</p>
+<p>Robot tries to find the desired room going to a random location, and scanning the room until the desired color ball is found, if not, moves to another location and repeats.</p>
+<dl class="docutils">
+<dt>State Machine:</dt>
+<dd>FIND(&#8216;found&#8217;) -&gt; PLAY (if ball is found)</dd>
+<dt>State inputs:</dt>
+<dd>room_in</dd>
+<dt>State outputs:</dt>
+<dd>entrance_fout, closet_fout, living_room_fout, kitchen_fout, bathroom_fout, bedroom_fout</dd>
+<dt>Attributes:</dt>
+<dd>go_random: (bool)
+good_coords: (bool)
+coords: (motion_plan.msg.PlanningGoal)
+my_time: (int)
+start_time: (int)</dd>
+<dt>Publishers:</dt>
+<dd><dl class="first last docutils">
+<dt>pub_command: publisher (std_msgs.String) to /gesture_request</dt>
+<dd>publishes the request to enter ball desired coordinates</dd>
+<dt>pub_color: publisher (std_msgs.String) to /color</dt>
+<dd>publishes the desired ball color corresponding to the room</dd>
+</dl>
+</dd>
+<dt>Subscribers:</dt>
+<dd><dl class="first last docutils">
+<dt>sub_flag: subscriber (std_msgs.Bool) to /arrived_play</dt>
+<dd>checks if the robot reached the ball</dd>
+<dt>sub_point: subscriber (geometry_msgs.Point) to /point_located</dt>
+<dd>subscribe to get the point for which the ball is located</dd>
+</dl>
+</dd>
+<dt>Actions:</dt>
+<dd><dl class="first last docutils">
+<dt>act_c: Client for action /move_base</dt>
+<dd><p class="first">calls the action to move the robot to the specified coordinates</p>
+<p>goal: geometry_msgs.PoseStamped</p>
+<p class="last">result: geometry_msgs.Pose</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="state_machine.Find.execute">
+<code class="descname">execute</code><span class="sig-paren">(</span><em>userdata</em><span class="sig-paren">)</span><a class="headerlink" href="#state_machine.Find.execute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="state_machine.Normal">
+<em class="property">class </em><code class="descclassname">state_machine.</code><code class="descname">Normal</code><a class="headerlink" href="#state_machine.Normal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">smach.state.State</span></code></p>
+<p>Class for the NORMAL state</p>
+<p>Robot walks randomly for a random amount of times.
+If &#8220;play&#8221; command is received, robot goes to PLAY state.
+If no command is received, eventually goes to SLEEP.</p>
+<dl class="docutils">
+<dt>State Machine:</dt>
+<dd>NORMAL(&#8216;play&#8217;) -&gt; PLAY (if play command received)
+NORMAL(&#8216;sleep&#8217;) -&gt; SLEEP (if no command received)</dd>
+<dt>Attributes:</dt>
+<dd>normal_counter: (int)
+coords: (motion_plan.msg.PlanningGoal)
+good_coord: (bool)</dd>
+<dt>Publishers:</dt>
+<dd>pub: publishes (std_msgs.String) to /status</dd>
+<dt>Subscribers:</dt>
+<dd><dl class="first last docutils">
+<dt>sub_command: subscriber (std_msgs.String) to /command</dt>
+<dd>subscribe to get the play command to enter the PLAY state</dd>
+</dl>
+</dd>
+<dt>Actions:</dt>
+<dd><dl class="first last docutils">
+<dt>act_c: Client for action /move_base</dt>
+<dd><p class="first">calls the action to move the robot to the specified coordinates</p>
+<p>goal: geometry_msgs.PoseStamped</p>
+<p class="last">result: geometry_msgs.Pose</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="state_machine.Normal.execute">
+<code class="descname">execute</code><span class="sig-paren">(</span><em>userdata</em><span class="sig-paren">)</span><a class="headerlink" href="#state_machine.Normal.execute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="state_machine.Play">
+<em class="property">class </em><code class="descclassname">state_machine.</code><code class="descname">Play</code><a class="headerlink" href="#state_machine.Play" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">smach.state.State</span></code></p>
+<p>Class for the PLAY state</p>
+<p>Robot plays for a said amount of times, going towards the human to know which room to find. If the room is known, goes to the room, if not, goes to FIND state to find the room.</p>
+<dl class="docutils">
+<dt>State Machine:</dt>
+<dd>PLAY(&#8216;find&#8217;) -&gt; FIND (if room is unknown)
+PLAY(&#8216;stop&#8217;) -&gt; NORMAL (when behavior ends)</dd>
+<dt>State inputs:</dt>
+<dd>entrance_pin, closet_pin, living_room_pin, kitchen_pin, bathroom_pin, bedroom_pin</dd>
+<dt>State outputs:</dt>
+<dd>room_out</dd>
+<dt>Attributes:</dt>
+<dd>play_counter: (int)
+play_times: (int)
+human: (geometry_msgs.Point) human coordinates
+coords: (motion_plan.msg.PlanningGoal)</dd>
+<dt>Subscribers:</dt>
+<dd><dl class="first last docutils">
+<dt>sub_flag: subscriber (std_msgs.Bool) to /arrived_play</dt>
+<dd>checks if the robot reached the ball</dd>
+<dt>sub_command: subscriber (std_msgs.String) to /command</dt>
+<dd>subscribe to get the stop command to exit the PLAY state</dd>
+</dl>
+</dd>
+<dt>Actions:</dt>
+<dd><dl class="first last docutils">
+<dt>act_c: Client for action /move_base</dt>
+<dd><p class="first">calls the action to move the robot to the specified coordinates</p>
+<p>goal: geometry_msgs.PoseStamped</p>
+<p class="last">result: geometry_msgs.Pose</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="state_machine.Play.execute">
+<code class="descname">execute</code><span class="sig-paren">(</span><em>userdata</em><span class="sig-paren">)</span><a class="headerlink" href="#state_machine.Play.execute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="state_machine.Play.room_select">
+<code class="descname">room_select</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#state_machine.Play.room_select" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to talk to human and select the destination point</p>
+<dl class="docutils">
+<dt>Rooms:</dt>
+<dd>entrance
+closet
+living room
+kitchen
+bathroom
+bedroom</dd>
+<dt>Returns:</dt>
+<dd><dl class="first last docutils">
+<dt>room</dt>
+<dd>The room where we want to play</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="state_machine.Sleep">
+<em class="property">class </em><code class="descclassname">state_machine.</code><code class="descname">Sleep</code><a class="headerlink" href="#state_machine.Sleep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">smach.state.State</span></code></p>
+<p>Class for the SLEEP state</p>
+<p>The robot goes to the sleep coordinate, stays there for a while, then wakes up and goes into NORMAL state</p>
+<dl class="docutils">
+<dt>State Machine:</dt>
+<dd>SLEEP(&#8216;wait&#8217;) -&gt; NORMAL (after time passes)</dd>
+<dt>Parameters:</dt>
+<dd>sleep_x: (double) Sleep x coordinate 
+sleep_y: (double) Sleep y coordinate
+time_sleep: (int) Sleeping time (1,10)</dd>
+<dt>Attributes:</dt>
+<dd>coords: (motion_plan.msg.PlanningGoal)</dd>
+<dt>Actions:</dt>
+<dd><dl class="first last docutils">
+<dt>act_c: Client for action /move_base</dt>
+<dd><p class="first">calls the action to move the robot to the specified coordinates</p>
+<p>goal: geometry_msgs.PoseStamped</p>
+<p class="last">result: geometry_msgs.Pose</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="state_machine.Sleep.execute">
+<code class="descname">execute</code><span class="sig-paren">(</span><em>userdata</em><span class="sig-paren">)</span><a class="headerlink" href="#state_machine.Sleep.execute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="state_machine.cb_command">
+<code class="descclassname">state_machine.</code><code class="descname">cb_command</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#state_machine.cb_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>callback to get the command received on the terminal</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="state_machine.cb_flag">
+<code class="descclassname">state_machine.</code><code class="descname">cb_flag</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#state_machine.cb_flag" title="Permalink to this definition">¶</a></dt>
+<dd><p>callback to set the arrived flag</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="state_machine.cb_point">
+<code class="descclassname">state_machine.</code><code class="descname">cb_point</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#state_machine.cb_point" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="state_machine.main">
+<code class="descclassname">state_machine.</code><code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#state_machine.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>State machine initialization</p>
+<p>Creates the state machine, add states and link their outputs.</p>
+<dl class="docutils">
+<dt>States:</dt>
+<dd>NORMAL | PLAY | SLEEP | FIND</dd>
+<dt>Transitions:</dt>
+<dd><p class="first">NORMAL -&gt; PLAY | SLEEP</p>
+<p>PLAY -&gt; NORMAL | FIND</p>
+<p>SLEEP -&gt; NORMAL</p>
+<p class="last">FIND -&gt; PLAY</p>
+</dd>
+<dt>Data mappings:</dt>
+<dd><p class="first">entrance - entrance_pin - entrance_fout</p>
+<p>closet - closet_pin - closet_fout</p>
+<p>living_room - living_room_pin - living_room_fout</p>
+<p>kitchen - kitchen_pin - kitchen_fout</p>
+<p>bathroom - bathroom_pin - bathroom_fout</p>
+<p class="last">bedroom - bedroom_pin - bedroom_fout</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="command_request.html" class="btn btn-neutral" title="command_request module" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, Andres Gutierrez.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
