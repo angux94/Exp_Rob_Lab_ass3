@@ -150,11 +150,12 @@
 <dt>State outputs:</dt>
 <dd>entrance_fout, closet_fout, living_room_fout, kitchen_fout, bathroom_fout, bedroom_fout</dd>
 <dt>Attributes:</dt>
-<dd>go_random: (bool)
-good_coords: (bool)
-coords: (MoveBaseGoal())
-my_time: (int)
-start_time: (int)</dd>
+<dd><p class="first">go_random: (bool)</p>
+<p>good_coords: (bool)</p>
+<p>coords: (MoveBaseGoal())</p>
+<p>my_time: (int)</p>
+<p class="last">start_time: (int)</p>
+</dd>
 <dt>Publishers:</dt>
 <dd><dl class="first last docutils">
 <dt>pub_command: publisher (std_msgs.String) to /gesture_request</dt>
@@ -244,10 +245,11 @@ PLAY(&#8216;stop&#8217;) -&gt; NORMAL (when behavior ends)</dd>
 <dt>State outputs:</dt>
 <dd>room_out</dd>
 <dt>Attributes:</dt>
-<dd>play_counter: (int)
-play_times: (int)
-human: (geometry_msgs.Point) human coordinates
-coords: (MoveBaseGoal())</dd>
+<dd><p class="first">play_counter: (int)</p>
+<p>play_times: (int)</p>
+<p>human: (geometry_msgs.Point) human coordinates</p>
+<p class="last">coords: (MoveBaseGoal())</p>
+</dd>
 <dt>Subscribers:</dt>
 <dd><dl class="first last docutils">
 <dt>sub_flag: subscriber (std_msgs.Bool) to /arrived_play</dt>
@@ -277,12 +279,13 @@ coords: (MoveBaseGoal())</dd>
 <dd><p>Function to talk to human and select the destination point</p>
 <dl class="docutils">
 <dt>Rooms:</dt>
-<dd>entrance
-closet
-living room
-kitchen
-bathroom
-bedroom</dd>
+<dd><p class="first">entrance</p>
+<p>closet</p>
+<p>living room</p>
+<p>kitchen</p>
+<p>bathroom</p>
+<p class="last">bedroom</p>
+</dd>
 <dt>Returns:</dt>
 <dd><dl class="first last docutils">
 <dt>room</dt>
@@ -304,9 +307,10 @@ bedroom</dd>
 <dt>State Machine:</dt>
 <dd>SLEEP(&#8216;wait&#8217;) -&gt; NORMAL (after time passes)</dd>
 <dt>Parameters:</dt>
-<dd>sleep_x: (double) Sleep x coordinate 
-sleep_y: (double) Sleep y coordinate
-time_sleep: (int) Sleeping time (1,10)</dd>
+<dd><p class="first">sleep_x: (double) Sleep x coordinate</p>
+<p>sleep_y: (double) Sleep y coordinate</p>
+<p class="last">time_sleep: (int) Sleeping time (1,10)</p>
+</dd>
 <dt>Attributes:</dt>
 <dd>coords: (MoveBaseGoal())</dd>
 <dt>Actions:</dt>

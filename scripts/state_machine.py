@@ -200,7 +200,9 @@ class Sleep(smach.State):
 
     Parameters:
     	sleep_x: (double) Sleep x coordinate 
+
     	sleep_y: (double) Sleep y coordinate
+
     	time_sleep: (int) Sleeping time (1,10)
 
     Attributes:
@@ -284,8 +286,11 @@ class Play(smach.State):
 
     Attributes:
     	play_counter: (int)
+
 	play_times: (int)
+
 	human: (geometry_msgs.Point) human coordinates
+
 	coords: (MoveBaseGoal())
     
     Subscribers:
@@ -330,10 +335,15 @@ class Play(smach.State):
 	
 	Rooms:
 		entrance
+
 		closet
+
 		living room
+
 		kitchen
+
 		bathroom
+
 		bedroom	
 	
 	Returns:
@@ -521,9 +531,13 @@ class Find(smach.State):
 
     Attributes:
     	go_random: (bool)
+
 	good_coords: (bool)
+
 	coords: (MoveBaseGoal())
+
 	my_time: (int)
+
 	start_time: (int)
 
     Publishers:
