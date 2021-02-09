@@ -15,7 +15,7 @@ Software Architecture and States Diagrams
 ----------------------------------------
 
 For the software architecture:
-![]()
+![](https://github.com/angux94/Exp_Rob_Lab_ass3/blob/main/Exp_Rob_Lab_Assignment3_Architecture.png)
 
 For the State Machine Diagram:
 ![]()
