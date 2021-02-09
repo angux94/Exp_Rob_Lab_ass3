@@ -20,7 +20,9 @@ For the software architecture:
 We have now
 
 For the State Machine Diagram:
+
 ![](https://github.com/angux94/Exp_Rob_Lab_ass3/blob/main/State%20Machine%20diagram.png)
+
 
 The State Machine has 3 states:
   - NORMAL: Main state in which the robot walks randomly until the "play" command arrives and goes to PLAY state, if not, goes to SLEEP state.
