@@ -87,7 +87,7 @@ Intstallation and Running Procedure
 Download the project, or clone the repository in the desired folder on your computer.
 
 Use: 
-  -roslaunch exp_assignment3 launcher.launch
+  - roslaunch exp_assignment3 launcher.launch
 
 It will launch all the required nodes and the program will be fully functional. parameters can be specified on the same command or inside the .launch file located on the /launch folder.
 
@@ -102,12 +102,12 @@ When the robot goes to SLEEP, he must wake up first in order to enter the play s
 
 The environment is an appartment, with a man and different rooms, each one linked to a colored ball, following the mapping:
   
-  entrance -> blue
-  closet -> red
-  living room -> green
-  kitchen -> yellow
-  bathroom -> pink
-  bedroom -> black
+  - entrance -> blue
+  - closet -> red
+  - living room -> green
+  - kitchen -> yellow
+  - bathroom -> pink
+  - bedroom -> black
   
 The robot has a specific sleep position to which it will go when perforing SLEEP state.
 
