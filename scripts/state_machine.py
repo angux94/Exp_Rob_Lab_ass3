@@ -28,7 +28,7 @@ class Normal(smach.State):
 
     Attributes:
     	normal_counter: (int)
-    	coords: (motion_plan.msg.PlanningGoal)
+    	coords: (MoveBaseGoal())
 	good_coord: (bool)
 
     Publishers:
@@ -88,6 +88,7 @@ class Normal(smach.State):
 	    # Amount of random walks before sleeping
             normal_times = random.randrange(1,5)
 
+	    # Pick a good coordinate to go to
 	    self.good_coord = False
 	    while(self.good_coord == False):
             	x = random.randrange(-6,6)
@@ -137,6 +138,9 @@ class Normal(smach.State):
 		    print(sm_command)
                     sm_command = None
                     return 'play'
+
+		#Let know to the command_recog node we can accept inputs
+	    	self.pub.publish('normal')
 
                 # If not, continue with the behavior
                 if(self.normal_counter < normal_times):
@@ -200,7 +204,7 @@ class Sleep(smach.State):
     	time_sleep: (int) Sleeping time (1,10)
 
     Attributes:
-    	coords: (motion_plan.msg.PlanningGoal)
+    	coords: (MoveBaseGoal())
 
     Actions:
     	act_c: Client for action /move_base
@@ -282,7 +286,7 @@ class Play(smach.State):
     	play_counter: (int)
 	play_times: (int)
 	human: (geometry_msgs.Point) human coordinates
-	coords: (motion_plan.msg.PlanningGoal)
+	coords: (MoveBaseGoal())
     
     Subscribers:
     	sub_flag: subscriber (std_msgs.Bool) to /arrived_play
@@ -339,16 +343,13 @@ class Play(smach.State):
 	
 	print("Human reached! Please tell me a room")
     	room = str(raw_input('room: '))
-	if room == 'stop':
-		print('we stop playing then')
-	else:
-    		print("Thanks! Let's reach the " + room)
+	print("Thanks! Let's reach the " + room)
 
 	return room		
 
 
     def execute(self, userdata):
-	global sm_flag, room_select
+	global sm_flag, room_select, sm_command
         time.sleep(1)
         rospy.loginfo('Executing state PLAY')
 	
@@ -356,8 +357,8 @@ class Play(smach.State):
 	if(self.play_counter == 0):	
 		self.play_times = random.randrange(1,4)
 	
-        while not rospy.is_shutdown():       
-                
+        while not rospy.is_shutdown():  
+
 		# If not, continue with the behavior
                 if(self.play_counter < self.play_times):
 			
@@ -378,6 +379,8 @@ class Play(smach.State):
 
 			# Waits for the server to finish performing the action.
 			self.act_c.wait_for_result()
+
+			# Select room
 			room = self.room_select()
 			userdata.room_out = room
 
@@ -519,7 +522,7 @@ class Find(smach.State):
     Attributes:
     	go_random: (bool)
 	good_coords: (bool)
-	coords: (motion_plan.msg.PlanningGoal)
+	coords: (MoveBaseGoal())
 	my_time: (int)
 	start_time: (int)
 
@@ -571,23 +574,31 @@ class Find(smach.State):
 	
 	self.my_time = 0
 	self.start_time = 0
+	self.attempts = 0
 
     def execute(self, userdata):
 
-	global sm_flag, sm_point
+	global sm_flag, sm_point, sm_command
         time.sleep(1)
         rospy.loginfo('Executing state FIND')
 
 	#We make sure we haven't arrived to the play destination
 	sm_flag = False
         while not rospy.is_shutdown():
-                
-		if(userdata.room_in == 'entrance'):
+		
+		# Try to find the room for maximum 4 times
+		if(self.attempts >=4):
+			self.attempts = 0
+			print("Going to human, couldn't find the room")
+			return 'found'                
 
+		if(userdata.room_in == 'entrance'):
+			
+			# Check if we have to go to a random point
 			if(self.go_random == True):
 
 				self.go_random = False
-				#userdata.living_room_fout = Point(x = -3, y = 7)
+				#For hard test Point(x = -3, y = 7)
 				self.good_coord = False
 				while(self.good_coord == False):
             				x = random.randrange(-6,6)
@@ -626,9 +637,12 @@ class Find(smach.State):
 				self.pub_command.publish("play")
 				# Tell which color to look for
 				self.pub_color.publish("blue")
+
+				# Check if ball has been reached
 				if sm_flag:
 					sm_flag = False
                         		time.sleep(1)
+					#Stop "watching" to the camera
 					self.pub_command.publish("stop")
 					userdata.entrance_fout = Point(x = sm_point.x, y = sm_point.y)
 					self.go_random = True
@@ -636,17 +650,22 @@ class Find(smach.State):
 					print("Entrance located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
 					return 'found'
 
-				elif(self.my_time >= 120):
+				elif(self.my_time >= 150):
 					print("Couldn't find the entrance, going to a new location to search")
-					self.pub_command.publish("search")
+					#Stop "watching" to the camera
+					self.pub_command.publish("stop")
+					
+					# Search for a new position					
 					self.go_random = True
+					self.attempts = self.attempts + 1
 
 		if(userdata.room_in == 'closet'):
 			
+			# Check if we have to go to a random point
 			if(self.go_random == True):
 
 				self.go_random = False
-				#userdata.living_room_fout = Point(x = -4, y = 2)
+				#For hard test Point(x = -4, y = 2)
 				self.good_coord = False
 				while(self.good_coord == False):
             				x = random.randrange(-6,6)
@@ -678,7 +697,7 @@ class Find(smach.State):
 			#Once it arrives, start searching for the ball
 			else:
 				self.my_time = time.time()-self.start_time
-				print(self.my_time)
+
 				# Start "watching" the camera
 				self.pub_command.publish("play")
 				# Tell which color to look for
@@ -686,6 +705,7 @@ class Find(smach.State):
 				if sm_flag:
 					sm_flag = False
                         		time.sleep(1)
+					#Stop "watching" to the camera
 					self.pub_command.publish("stop")
 					userdata.closet_fout = Point(x = sm_point.x, y = sm_point.y)
 					self.go_random = True
@@ -693,18 +713,24 @@ class Find(smach.State):
 					print("Closet located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
 					return 'found'
 
-				elif(self.my_time >= 120):
+				elif(self.my_time >= 150):
 					print("Couldn't find the closet, going to a new location to search")
+					
+					#Stop "watching" to the camera
+					self.pub_command.publish("stop")
+					
+					# Search for a new position
 					self.go_random = True
-					self.pub_command.publish("search")
+					self.attempts = self.attempts + 1
 
 
 		if(userdata.room_in == 'living room'):
 						
+			# Check if we have to go to a random point
 			if(self.go_random == True):
 
 				self.go_random = False
-				#userdata.living_room_fout = Point(x = -3, y = -2)
+				#For hard test Point(x = -3, y = -2)
 				self.good_coord = False
 				while(self.good_coord == False):
             				x = random.randrange(-6,6)
@@ -736,7 +762,7 @@ class Find(smach.State):
 			#Once it arrives, start searching for the ball
 			else:
 				self.my_time = time.time()-self.start_time
-				print(self.my_time)
+
 				# Start "watching" the camera
 				self.pub_command.publish("play")
 				# Tell which color to look for
@@ -744,6 +770,7 @@ class Find(smach.State):
 				if sm_flag:
 					sm_flag = False
                         		time.sleep(1)
+					#Stop "watching" to the camera
 					self.pub_command.publish("stop")
 					userdata.living_room_fout = Point(x = sm_point.x, y = sm_point.y)
 					self.go_random = True
@@ -751,17 +778,23 @@ class Find(smach.State):
 					print("Living room located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
 					return 'found'
 
-				elif(self.my_time >= 120):
+				elif(self.my_time >= 150):
 					print("Couldn't find the living room, going to a new location to search")
+
+					#Stop "watching" to the camera
+					self.pub_command.publish("stop")
+					
+					# Search for a new position
 					self.go_random = True
-					self.pub_command.publish("search")
+					self.attempts = self.attempts + 1
 
 		if(userdata.room_in == 'kitchen'):
 
+			# Check if we have to go to a random point
 			if(self.go_random == True):
 
 				self.go_random = False
-				#userdata.living_room_fout = Point(x = 2, y = -7)
+				#For hard test Point(x = 2, y = -7)
 				self.good_coord = False
 				while(self.good_coord == False):
             				x = random.randrange(-6,6)
@@ -794,7 +827,7 @@ class Find(smach.State):
 			#Once it arrives, start searching for the ball
 			else:
 				self.my_time = time.time()-self.start_time
-				print(self.my_time)
+
 				# Start "watching" the camera
 				self.pub_command.publish("play")
 				# Tell which color to look for
@@ -802,6 +835,7 @@ class Find(smach.State):
 				if sm_flag:
 					sm_flag = False
                         		time.sleep(1)
+					#Stop "watching" to the camera
 					self.pub_command.publish("stop")
 					userdata.kitchen_fout = Point(x = sm_point.x, y = sm_point.y)
 					self.go_random = True
@@ -809,17 +843,23 @@ class Find(smach.State):
 					print("Kitchen located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
 					return 'found'
 
-				elif(self.my_time >= 120):
+				elif(self.my_time >= 150):
 					print("Couldn't find the kitchen, going to a new location to search")
+
+					#Stop "watching" to the camera
+					self.pub_command.publish("stop")
+					
+					# Search for a new position
 					self.go_random = True
-					self.pub_command.publish("search")
+					self.attempts = self.attempts + 1
 
 		if(userdata.room_in == 'bathroom'):
 			
+			# Check if we have to go to a random point
 			if(self.go_random == True):
 
 				self.go_random = False
-				#userdata.living_room_fout = Point(x = 4, y = -4)
+				#For hard test Point(x = 4, y = -4)
 				self.good_coord = False
 				while(self.good_coord == False):
             				x = random.randrange(-6,6)
@@ -852,7 +892,7 @@ class Find(smach.State):
 			#Once it arrives, start searching for the ball
 			else:
 				self.my_time = time.time()-self.start_time
-				print(self.my_time)
+
 				# Start "watching" the camera
 				self.pub_command.publish("play")
 				# Tell which color to look for
@@ -860,6 +900,7 @@ class Find(smach.State):
 				if sm_flag:
 					sm_flag = False
                         		time.sleep(1)
+					#Stop "watching" to the camera
 					self.pub_command.publish("stop")
 					userdata.bathroom_fout = Point(x = sm_point.x, y = sm_point.y)
 					self.go_random = True
@@ -867,17 +908,23 @@ class Find(smach.State):
 					print("Bathroom located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
 					return 'found'
 
-				elif(self.my_time >= 120):
+				elif(self.my_time >= 150):
 					print("Couldn't find the bathroom, going to a new location to search")
+
+					#Stop "watching" to the camera
+					self.pub_command.publish("stop")
+					
+					# Search for a new position
 					self.go_random = True
-					self.pub_command.publish("search")
+					self.attempts = self.attempts + 1
 
 		if(userdata.room_in == 'bedroom'):
 
+			# Check if we have to go to a random point
 			if(self.go_random == True):
 
 				self.go_random = False
-				#userdata.living_room_fout = Point(x = 4, y = 0)
+				#For hard test Point(x = 4, y = 0)
 				self.good_coord = False
 				while(self.good_coord == False):
             				x = random.randrange(-6,6)
@@ -910,7 +957,7 @@ class Find(smach.State):
 			#Once it arrives, start searching for the ball
 			else:
 				self.my_time = time.time()-self.start_time
-				print(self.my_time)
+
 				# Start "watching" the camera
 				self.pub_command.publish("play")
 				# Tell which color to look for
@@ -918,6 +965,7 @@ class Find(smach.State):
 				if sm_flag:
 					sm_flag = False
                         		time.sleep(1)
+					#Stop "watching" to the camera
 					self.pub_command.publish("stop")
 					userdata.bedroom_fout = Point(x = sm_point.x, y = sm_point.y)
 					self.go_random = True
@@ -925,10 +973,15 @@ class Find(smach.State):
 					print("Bedroom located at x: " + str(sm_point.x) + " y: " + str(sm_point.y))
 					return 'found'
 
-				elif(self.my_time >= 120):
+				elif(self.my_time >= 150):
 					print("Couldn't find the bedroom, going to a new location to search")
+
+					#Stop "watching" to the camera
+					self.pub_command.publish("stop")
+					
+					# Search for a new position
 					self.go_random = True
-					self.pub_command.publish("search")
+					self.attempts = self.attempts + 1
 
 
 # Callback functions

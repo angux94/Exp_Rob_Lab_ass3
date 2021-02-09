@@ -216,17 +216,13 @@ class image_feature:
 		#cv2.imshow('window', image_np)
 		cv2.waitKey(2)
 	
-	# If 'stop' command, start searching for the ball
+	# If 'stop' command, stop searching for the ball
 	elif cb_msg == 'stop':
 		cb_msg = None
 
-	# Stop searching for the ball while going to a new location
-	elif cb_msg == 'search':
-		#cv2.imshow('window', image_np)
-		cv2.waitKey(2)
 	else:
 		cv2.waitKey(2)
-	# self.subscriber.unregister()
+
 
 
 def main(args):

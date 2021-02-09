@@ -152,7 +152,7 @@
 <dt>Attributes:</dt>
 <dd>go_random: (bool)
 good_coords: (bool)
-coords: (motion_plan.msg.PlanningGoal)
+coords: (MoveBaseGoal())
 my_time: (int)
 start_time: (int)</dd>
 <dt>Publishers:</dt>
@@ -202,7 +202,7 @@ If no command is received, eventually goes to SLEEP.</p>
 NORMAL(&#8216;sleep&#8217;) -&gt; SLEEP (if no command received)</dd>
 <dt>Attributes:</dt>
 <dd>normal_counter: (int)
-coords: (motion_plan.msg.PlanningGoal)
+coords: (MoveBaseGoal())
 good_coord: (bool)</dd>
 <dt>Publishers:</dt>
 <dd>pub: publishes (std_msgs.String) to /status</dd>
@@ -247,7 +247,7 @@ PLAY(&#8216;stop&#8217;) -&gt; NORMAL (when behavior ends)</dd>
 <dd>play_counter: (int)
 play_times: (int)
 human: (geometry_msgs.Point) human coordinates
-coords: (motion_plan.msg.PlanningGoal)</dd>
+coords: (MoveBaseGoal())</dd>
 <dt>Subscribers:</dt>
 <dd><dl class="first last docutils">
 <dt>sub_flag: subscriber (std_msgs.Bool) to /arrived_play</dt>
@@ -308,7 +308,7 @@ bedroom</dd>
 sleep_y: (double) Sleep y coordinate
 time_sleep: (int) Sleeping time (1,10)</dd>
 <dt>Attributes:</dt>
-<dd>coords: (motion_plan.msg.PlanningGoal)</dd>
+<dd>coords: (MoveBaseGoal())</dd>
 <dt>Actions:</dt>
 <dd><dl class="first last docutils">
 <dt>act_c: Client for action /move_base</dt>

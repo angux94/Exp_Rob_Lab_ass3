@@ -55,7 +55,7 @@ def main():
 				print('command play received')
 				status = "play"
 				pub.publish(txt)
-		
+			
 			# Code for invalid comand and retry
 			else:
 				print("Your command '" + txt + "' is not valid.")
