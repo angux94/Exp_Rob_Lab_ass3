@@ -213,7 +213,7 @@ class image_feature:
 		    # Reset the state to not arrived
 		    self.arrive = False
 
-		#cv2.imshow('window', image_np)
+		cv2.imshow('window', image_np)
 		cv2.waitKey(2)
 	
 	# If 'stop' command, stop searching for the ball

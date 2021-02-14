@@ -98,15 +98,11 @@ class Normal(smach.State):
 		#Check if the random coordinates are reachable in the map
 		if x >= 1 and y >= 4:
 			self.good_coord = False
-			print('Bad coord 1')
 		elif x <= -1 and y <= -6:
 			self.good_coord = False
-			print('Bad coord 2')
 		elif x >= 1 and x <=2 and y >= 1 and y <= 3:
 			self.good_coord = False
-			print('Bad coord 3')
 		else:
-			print('good coord')
 			self.good_coord = True
 
             normal_coord = Point(x = x, y = y, z = z)
